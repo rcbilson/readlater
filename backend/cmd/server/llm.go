@@ -64,37 +64,18 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
 
 	output, err := llm.client.Converse(ctx, params)
 	if err != nil {
-		log.Fatal("failed to converse: ", err)
+		return "", err
 	}
 
 	log.Println("Converse usage:", *output.Usage.InputTokens, *output.Usage.OutputTokens)
 
 	switch v := output.Output.(type) {
 	case *types.ConverseOutputMemberMessage:
-		ret := fmt.Sprintf("%s: ", v.Value.Role)
+                var ret string
 		for _, block := range v.Value.Content {
 			switch v := block.(type) {
-			case *types.ContentBlockMemberDocument:
-				ret += "(document)"
-
-			case *types.ContentBlockMemberGuardContent:
-				ret += "(blocked)"
-
-			case *types.ContentBlockMemberImage:
-				ret += "(image block)"
-
 			case *types.ContentBlockMemberText:
-				ret += "<" + v.Value + ">"
-
-			case *types.ContentBlockMemberToolResult:
-				ret += "(tool result)"
-
-			case *types.ContentBlockMemberToolUse:
-				ret += "(tool use)"
-
-			case *types.UnknownUnionMember:
-				fmt.Println("unknown tag:", v.Tag)
-
+				ret += v.Value
 			default:
 				fmt.Println("union is nil or unknown type")
 
