@@ -1,0 +1,24 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: left;
+}
+
+#searchbar {
+  display: flex;
+  padding: 1em;
+}
+
+#url {
+  flex: 1;
+}
+
+#title {
+  font-size: 1.5em;
+  line-height: 1.1;
+}
+
+#method {
+  line-height: 1.1;
+}
