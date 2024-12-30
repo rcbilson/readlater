@@ -14,7 +14,6 @@ import (
 type specification struct {
 	Port         int    `default:"9000"`
 	FrontendPath string `default:"/home/richard/src/recipe/frontend/build"`
-	AwsRegion    string `default:"ca-central-1"`
 }
 
 var spec specification
@@ -25,7 +24,7 @@ func main() {
 		log.Fatal("error reading environment variables:", err)
 	}
 
-	llm, err := InitializeLlm(context.Background(), spec.AwsRegion)
+	llm, err := InitializeLlm(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}

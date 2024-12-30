@@ -11,7 +11,7 @@ import (
 )
 
 func TestRecipes(t *testing.T) {
-	llm, err := InitializeLlm(context.Background(), "ca-central-1")
+	llm, err := InitializeLlm(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}
@@ -36,9 +36,16 @@ func TestRecipes(t *testing.T) {
 			continue
 		}
 		// save summary for possible analysis
-		os.WriteFile(strings.TrimSuffix(file, ".html")+".json", []byte(summary), 644)
+		path := strings.TrimSuffix(file, ".html") + ".json"
+		output, err := os.Create(path)
 		if err != nil {
-			t.Error(fmt.Sprintf("%s: error writing summary file: %v", file, err))
+			t.Error(fmt.Sprintf("%s: error creating file: %v", file, err))
+		}
+		defer output.Close()
+
+		_, err = output.Write([]byte(summary))
+		if err != nil {
+			t.Error(fmt.Sprintf("%s: error writing summary output: %v", file, err))
 		}
 	}
 }

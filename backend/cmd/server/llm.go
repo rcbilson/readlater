@@ -11,26 +11,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
-var modelId = "meta.llama3-8b-instruct-v1:0"
-
 type LlmContext struct {
+	LlmParams
 	client *bedrockruntime.Client
-	prompt string
 }
 
-func InitializeLlm(ctx context.Context, region string) (*LlmContext, error) {
-	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+func InitializeLlm(ctx context.Context, params LlmParams) (*LlmContext, error) {
+	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(params.Region))
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't load default configuration: %w", err)
 	}
 
 	client := bedrockruntime.NewFromConfig(sdkConfig)
 
-	prompt := `<|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-The attached html file contains a recipe. Generate a JSON object with the following properties: "title" containing the title of the recipe, "ingredients" containing the ingredients list of the recipe, and "method" containing the steps required to make the recipe. Only output JSON.<|eot_id|><|start_header_id|>assistant<|end_header_id|>`
-
-	return &LlmContext{client: client, prompt: prompt}, nil
+	return &LlmContext{LlmParams: params, client: client}, nil
 }
 
 func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
@@ -39,7 +33,7 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
 		Messages: []types.Message{
 			types.Message{
 				Content: []types.ContentBlock{
-					&types.ContentBlockMemberText{Value: llm.prompt},
+					&types.ContentBlockMemberText{Value: llm.Prompt},
 					&types.ContentBlockMemberDocument{
 						Value: types.DocumentBlock{
 							Format: types.DocumentFormatHtml,
@@ -52,9 +46,15 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
 				},
 				Role: types.ConversationRoleUser,
 			},
+			types.Message{
+				Content: []types.ContentBlock{
+					&types.ContentBlockMemberText{Value: llm.Prefill},
+				},
+				Role: types.ConversationRoleAssistant,
+			},
 		},
 
-		ModelId: &modelId,
+		ModelId: &llm.ModelID,
 
 		// Inference parameters to pass to the model. Converse supports a base set of
 		// inference parameters. If you need to pass additional parameters that the model
@@ -71,7 +71,7 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
 
 	switch v := output.Output.(type) {
 	case *types.ConverseOutputMemberMessage:
-                var ret string
+		ret := llm.Prefill
 		for _, block := range v.Value.Content {
 			switch v := block.(type) {
 			case *types.ContentBlockMemberText:
