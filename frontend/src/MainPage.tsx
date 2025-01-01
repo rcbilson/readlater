@@ -2,9 +2,15 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { ErrorBoundary } from "react-error-boundary";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -20,9 +26,25 @@ type Recipe = {
   method: string[];
 }
 
+const testRecipe: Recipe = {
+  url: "https://www.bbcgoodfood.com/recipes/pancakes",
+  title: "Pancakes",
+  ingredients: ["flour", "milk", "eggs"],
+  method: ["combine ingredients", "cook until done"]
+}
+
 const MainPage: React.FC = () => {
-  const [recipeUrl, setRecipeUrl] = useState("");
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const params = useParams();
+  const path = params['*'];
+  if (!path) throw new Error("could not find * for show");
+  const segments = path.split("/");
+  //segments.unshift("subscribe");
+  //const newpath = "/" + segments.join("/");
+ 
+  const [recipeUrl, setRecipeUrl] = useState(path);
   const [debug, setDebug] = useState(false);
 
   const handleRecipeUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,13 +53,30 @@ const MainPage: React.FC = () => {
 
   const fetchRecipe = async () => {
     try {
+      console.log("fetching " + recipeUrl);
       const request : RecipeRequest = { url: recipeUrl };
-      const response = await axios.post<Recipe>("/summarize", request);
-      setRecipe(response.data);
+      //const response = await axios.post<Recipe>("/summarize", request);
+      //setRecipe(response.data);
+      return testRecipe;
     } catch (error) {
       console.error("Error fetching recipe:", error);
     }
   };
+
+  const {status, data, error} = useQuery({
+    queryKey: ['recipe'],
+    queryFn: fetchRecipe
+  });
+  const recipe = data;
+  
+  const handleButtonClick = async () => {
+    if (recipeUrl != path) {
+      navigate("/show/" + recipeUrl);
+    }
+    queryClient.invalidateQueries(['recipe']);
+  };
+
+  const buttonText = (recipeUrl == path) ? "Refresh" : "Load";
 
   // When CTRL-Q is pressed, switch to debug display
   const checkHotkey = useCallback(
@@ -72,7 +111,7 @@ const MainPage: React.FC = () => {
     <div id="container">
       <div id="searchbar">
         <input id="url" type="text" value={recipeUrl} onChange={handleRecipeUrlChange} />
-        <button onClick={fetchRecipe}>Refresh</button>
+        <button onClick={handleButtonClick}>{buttonText}</button>
       </div>
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
@@ -84,6 +123,7 @@ const MainPage: React.FC = () => {
 	>
 	  <div>
 	   <div id="title">{recipe.title}</div>
+           <div id="url">{recipe.url}</div>
 	   <div id="method">
              {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
              {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
