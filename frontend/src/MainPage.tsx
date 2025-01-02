@@ -42,10 +42,10 @@ const MainPage: React.FC = () => {
   };
 
   const fetchRecipe = async () => {
-    if (!searchText) return "";
+    if (!recipeUrl) return "";
 
-    console.log("fetching " + searchText);
-    const request : RecipeRequest = { url: searchText };
+    console.log("fetching " + recipeUrl);
+    const request : RecipeRequest = { url: recipeUrl };
     const response = await axios.post<Recipe>("/summarize", request);
     return response.data;
     //return testRecipe;
@@ -53,7 +53,8 @@ const MainPage: React.FC = () => {
 
   const {isPending, isError, data, error} = useQuery({
     queryKey: ['recipe'],
-    queryFn: fetchRecipe
+    queryFn: fetchRecipe,
+    refetchOnWindowFocus: false,
   });
   const recipe = data;
   
