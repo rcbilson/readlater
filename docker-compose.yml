@@ -1,0 +1,11 @@
+# vim: set aw sw=2
+services:
+  recipe:
+    build: .
+    image: recipe_server:latest
+    container_name: recipe_server
+    ports:
+      - 9600:9093
+    #volumes:
+      #- /n/user/richard/src/accounts/data:/app/data
+    restart: unless-stopped
