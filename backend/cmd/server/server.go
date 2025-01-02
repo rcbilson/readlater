@@ -13,7 +13,7 @@ import (
 
 type specification struct {
 	Port         int    `default:"9000"`
-	FrontendPath string `default:"/home/richard/src/recipe/frontend/build"`
+	FrontendPath string `default:"/home/richard/src/recipe/frontend/dist"`
 }
 
 var spec specification
@@ -31,15 +31,11 @@ func main() {
 
 	// Handle the /api route in the backend
 	http.Handle("/summarize", http.HandlerFunc(summarize(llm)))
-	/*
-		// For render requests, serve up the frontend code
-		http.HandleFunc("/render/", func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
-		})
-		http.Handle("/static/", http.FileServer(http.Dir(spec.FrontendPath)))
-		http.Handle("/favicon.ico", http.FileServer(http.Dir(spec.FrontendPath)))
-		http.HandleFunc("/", indexHandler)
-	*/
+	// For show requests, serve up the frontend code
+	http.HandleFunc("/show/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
+	})
+	http.Handle("/assets/", http.FileServer(http.Dir(spec.FrontendPath)))
 	log.Println("server listening on port", spec.Port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", spec.Port), nil))
 }
