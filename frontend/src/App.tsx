@@ -1,4 +1,3 @@
-import React from "react";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -8,7 +7,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 
-import ErrorPage from "./ErrorPage.js";
+import ErrorPage from "./ErrorPage.jsx";
 import MainPage from "./MainPage.tsx";
 
 const router = createBrowserRouter([

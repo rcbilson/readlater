@@ -2,11 +2,10 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from "axios";
-import { ErrorBoundary } from "react-error-boundary";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -16,17 +15,18 @@ type RecipeRequest = {
 // Recipe is a type representing a recipe, with a url, a title, a
 // list of ingredients, and a list of steps.
 type Recipe = {
-  url: string;
   title: string;
   ingredients: string[];
   method: string[];
 }
 
+/*
 const testRecipe: Recipe = {
   title: "Pancakes",
   ingredients: ["flour", "milk", "eggs"],
   method: ["combine ingredients", "cook until done"]
 }
+*/
 
 const MainPage: React.FC = () => {
   const queryClient = useQueryClient()
@@ -42,6 +42,8 @@ const MainPage: React.FC = () => {
   };
 
   const fetchRecipe = async () => {
+    if (!searchText) return "";
+
     console.log("fetching " + searchText);
     const request : RecipeRequest = { url: searchText };
     const response = await axios.post<Recipe>("/summarize", request);
@@ -56,10 +58,11 @@ const MainPage: React.FC = () => {
   const recipe = data;
   
   const handleButtonClick = async () => {
+    if (!searchText) return;
     if (searchText != recipeUrl) {
       navigate("/show/" + encodeURIComponent(searchText));
     }
-    queryClient.invalidateQueries(['recipe']);
+    queryClient.invalidateQueries({ queryKey: ['recipe'] })
   };
 
   let buttonText;
@@ -75,7 +78,7 @@ const MainPage: React.FC = () => {
 
   // When CTRL-Q is pressed, switch to debug display
   const checkHotkey = useCallback(
-    (e: KeyboardEvent) => {
+    (event: KeyboardEvent) => {
       if (event.ctrlKey && event.key === "q") {
 	setDebug(!debug);
       }
@@ -91,17 +94,6 @@ const MainPage: React.FC = () => {
     };
   }, [checkHotkey]);
 
-  function fallbackRender({ error, resetErrorBoundary }) {
-    // Call resetErrorBoundary() to reset the error boundary and retry the render.
-
-    return (
-      <div role="alert">
-	<p>Something went wrong:</p>
-	<pre style={{ color: "red" }}>{error.message}</pre>
-      </div>
-    );
-  }
-
   return (
     <div id="container">
       <div id="searchbar">
@@ -111,20 +103,13 @@ const MainPage: React.FC = () => {
       {isError && <div>An error occurred: {error.message}</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
-	<ErrorBoundary
-	  fallbackRender={fallbackRender}
-	  onReset={(details) => {
-	    // Reset the state of your app so the error doesn't happen again
-	  }}
-	>
-	  <div>
-	   <div id="title">{recipe.title}</div>
-	   <div id="method">
-             {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
-             {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
-	   </div>
-	  </div>
-	</ErrorBoundary>
+        <div>
+         <div id="title">{recipe.title}</div>
+         <div id="method">
+           {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
+           {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
+         </div>
+        </div>
       }
     </div>
   );
