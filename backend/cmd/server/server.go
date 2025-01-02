@@ -45,12 +45,15 @@ func main() {
 }
 
 func logError(w http.ResponseWriter, msg string, code int) {
-        log.Printf("%d %s", code, msg)
-        http.Error(w, msg, code)
+	log.Printf("%d %s", code, msg)
+	http.Error(w, msg, code)
 }
 
 func summarize(llm *LlmContext) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//w.Header().Set("Content-Type", "application/json")
+		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
+		//return
 		ctx := r.Context()
 		var req struct {
 			Url string `json:"url"`
