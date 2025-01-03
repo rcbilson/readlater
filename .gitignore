@@ -3,3 +3,4 @@ backend/cmd/server/testdata
 *.swp
 frontend/node_modules
 aws.env
+recipe.db

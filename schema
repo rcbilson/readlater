@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+sqlite3 recipe.db <<EOF
+create table if not exists recipe (
+  url text primary key,
+  summary text
+)
+EOF

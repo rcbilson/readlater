@@ -1,0 +1,2 @@
+https://www.sqlite.org/fts5.html
+go build --tags "fts5" myapplication.go
