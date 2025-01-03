@@ -6,6 +6,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ErrorBoundary } from "react-error-boundary";
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -104,13 +105,15 @@ const MainPage: React.FC = () => {
       {isError && <div>An error occurred: {error.message}</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
-        <div>
-         <div id="title">{recipe.title}</div>
-         <div id="method">
-           {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
-           {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
-         </div>
-        </div>
+	<ErrorBoundary fallback={<div>That didn't work. Maybe try refreshing?</div>}>
+          <div>
+           <div id="title">{recipe.title}</div>
+           <div id="method">
+             {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
+             {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
+           </div>
+          </div>
+        </ErrorBoundary>
       }
     </div>
   );
