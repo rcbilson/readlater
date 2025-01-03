@@ -6,6 +6,8 @@ services:
     container_name: recipe_server
     ports:
       - 9600:9093
+    env_file:
+      - aws.env
     #volumes:
       #- /n/user/richard/src/accounts/data:/app/data
     restart: unless-stopped
