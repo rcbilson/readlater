@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,12 @@ import (
 	"strings"
 	"testing"
 )
+
+type recipeJson struct {
+	Title       string   `json:"title"`
+	Ingredients []string `json:"ingredients"`
+	Method      []string `json:"method"`
+}
 
 func TestRecipes(t *testing.T) {
 	llm, err := InitializeLlm(context.Background(), *theModel)
@@ -46,6 +53,13 @@ func TestRecipes(t *testing.T) {
 		_, err = output.Write([]byte(summary))
 		if err != nil {
 			t.Error(fmt.Sprintf("%s: error writing summary output: %v", file, err))
+		}
+
+		var r recipeJson
+		err = json.Unmarshal([]byte(summary), &r)
+		if err != nil {
+			t.Error(fmt.Sprintf("%s: JSON decode error: %v", file, err))
+			return
 		}
 	}
 }
