@@ -14,6 +14,7 @@ import (
 type specification struct {
 	Port         int    `default:"9000"`
 	FrontendPath string `default:"/home/richard/src/recipe/frontend/dist"`
+	DbFile       string `default:"/home/richard/src/recipe/recipe.db"`
 }
 
 var spec specification
@@ -29,8 +30,14 @@ func main() {
 		log.Fatal("error initializing llm interface:", err)
 	}
 
+	db, err := InitializeDb(spec.DbFile)
+	if err != nil {
+		log.Fatal("error initializing databasae interface:", err)
+	}
+	defer db.Close()
+
 	// Handle the /api route in the backend
-	http.Handle("/summarize", http.HandlerFunc(summarize(llm)))
+	http.Handle("/summarize", http.HandlerFunc(summarize(llm, db)))
 	// For show requests, serve up the frontend code
 	http.HandleFunc("/show/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
@@ -45,7 +52,7 @@ func logError(w http.ResponseWriter, msg string, code int) {
 	http.Error(w, msg, code)
 }
 
-func summarize(llm *LlmContext) func(http.ResponseWriter, *http.Request) {
+func summarize(llm *LlmContext, db *DbContext) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
@@ -59,15 +66,27 @@ func summarize(llm *LlmContext) func(http.ResponseWriter, *http.Request) {
 			logError(w, fmt.Sprintf("JSON decode error: %v", err), http.StatusBadRequest)
 			return
 		}
-		recipe, err := fetch(ctx, req.Url)
-		if err != nil {
-			logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
-			return
+		doUpdate := false
+		summary, ok := db.Get(req.Url)
+		if !ok {
+			log.Println("fetching recipe", req.Url)
+			doUpdate = true
+			recipe, err := fetch(ctx, req.Url)
+			if err != nil {
+				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
+				return
+			}
+			summary, err = llm.Ask(ctx, recipe)
+			if err != nil {
+				logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
+				return
+			}
 		}
-		summary, err := llm.Ask(ctx, recipe)
-		if err != nil {
-			logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
-			return
+		if doUpdate {
+			err = db.Insert(req.Url, summary)
+			if err != nil {
+				log.Printf("Error inserting into db: %v", err)
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

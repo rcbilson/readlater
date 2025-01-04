@@ -18,6 +18,10 @@ type recipeJson struct {
 }
 
 func TestRecipes(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	llm, err := InitializeLlm(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)

@@ -18,11 +18,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.2 // indirect
 	github.com/aws/smithy-go v1.22.0 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sqs/goreturns v0.0.0-20231030191505-16fc3d8edd91 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
+	gotest.tools v2.2.0+incompatible // indirect
 )

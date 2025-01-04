@@ -3,7 +3,7 @@
 set -e
 
 sqlite3 recipe.db <<EOF
-create table if not exists recipe (
+create table if not exists recipes (
   url text primary key,
   summary text
 )
