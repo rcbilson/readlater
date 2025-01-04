@@ -14,7 +14,7 @@ import (
 type specification struct {
 	Port         int    `default:"9000"`
 	FrontendPath string `default:"/home/richard/src/recipe/frontend/dist"`
-	DbFile       string `default:"/home/richard/src/recipe/recipe.db"`
+	DbFile       string `default:"/home/richard/src/recipe/data/recipe.db"`
 }
 
 var spec specification
