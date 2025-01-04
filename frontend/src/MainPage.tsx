@@ -8,6 +8,8 @@ import axios from "axios";
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 
+import SearchBar from "./SearchBar.tsx";
+
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
   url: string;
@@ -35,12 +37,7 @@ const MainPage: React.FC = () => {
 
   const { recipeUrl } = useParams();
  
-  const [searchText, setSearchText] = useState(recipeUrl);
   const [debug, setDebug] = useState(false);
-
-  const handleRecipeUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(event.target.value);
-  };
 
   const fetchRecipe = async () => {
     if (!recipeUrl) return "";
@@ -53,30 +50,20 @@ const MainPage: React.FC = () => {
   };
 
   const {isPending, isError, data, error} = useQuery({
-    queryKey: ['recipe'],
+    queryKey: ['recipe', recipeUrl],
     queryFn: fetchRecipe,
     refetchOnWindowFocus: false,
   });
   const recipe = data;
   
-  const handleButtonClick = async () => {
+  const handleButtonClick = (searchText: string) => {
     if (!searchText) return;
     if (searchText != recipeUrl) {
       navigate("/show/" + encodeURIComponent(searchText));
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['recipe'] })
     }
-    queryClient.invalidateQueries({ queryKey: ['recipe'] })
   };
-
-  let buttonText;
-  let buttonDisabled = false;
-  if (isPending) {
-    buttonText = "Loading...";
-    buttonDisabled = true;
-  } else if (searchText == recipeUrl) {
-    buttonText = "Refresh";
-  } else {
-    buttonText = "Load";
-  }
 
   // When CTRL-Q is pressed, switch to debug display
   const checkHotkey = useCallback(
@@ -98,10 +85,7 @@ const MainPage: React.FC = () => {
 
   return (
     <div id="container">
-      <div id="searchbar">
-        <input id="url" type="text" value={searchText} onChange={handleRecipeUrlChange} />
-        <button onClick={handleButtonClick} disabled={buttonDisabled}>{buttonText}</button>
-      </div>
+      <SearchBar contents={recipeUrl} isPending={isPending} onSearch={handleButtonClick} />
       {isError && <div>An error occurred: {error.message}</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
