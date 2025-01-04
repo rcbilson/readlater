@@ -25,6 +25,7 @@ FROM golang:1.23
 #RUN apk add --no-cache sqlite
 COPY --from=build-frontend /src/dist /app/frontend
 COPY --from=build-server /bin /app/bin
+ENV RECIPESERVER_DBFILE /app/data/recipe.db
 ENV RECIPESERVER_FRONTENDPATH /app/frontend
 ENV RECIPESERVER_PORT 9093
 CMD ["/app/bin/server"]
