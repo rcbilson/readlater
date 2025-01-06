@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 interface Props {
-  contents: string | undefined;
+  contents?: string;
   isPending: boolean;
   onSearch: (searchText: string) => void;
 }

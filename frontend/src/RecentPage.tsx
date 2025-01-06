@@ -2,11 +2,10 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React, { useState, useCallback, useEffect } from "react";
-import { useParams, useNavigate } from 'react-router-dom';
+import React from "react";
+import { useNavigate } from 'react-router-dom';
 import axios from "axios";
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ErrorBoundary } from "react-error-boundary";
+import { useQuery } from '@tanstack/react-query'
 
 import SearchBar from "./SearchBar.tsx";
 
@@ -16,7 +15,6 @@ type Recent = {
 }
 
 const RecentPage: React.FC = () => {
-  const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   const fetchRecents = async () => {
@@ -34,9 +32,7 @@ const RecentPage: React.FC = () => {
   
   const handleButtonClick = (searchText: string) => {
     if (!searchText) return;
-    if (searchText != recipeUrl) {
-      navigate("/show/" + encodeURIComponent(searchText));
-    }
+    navigate("/show/" + encodeURIComponent(searchText));
   };
 
   const handleRecentClick = (url: string) => {
