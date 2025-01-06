@@ -73,7 +73,7 @@ func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
 				return
 			}
 		}
-		recentList, err := db.Recents(count)
+		recentList, err := db.Recents(r.Context(), count)
 		if err != nil {
 			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusBadRequest)
 			return
@@ -98,7 +98,7 @@ func summarize(llm *LlmContext, db *DbContext) func(http.ResponseWriter, *http.R
 			return
 		}
 		doUpdate := false
-		summary, ok := db.Get(req.Url)
+		summary, ok := db.Get(ctx, req.Url)
 		if !ok {
 			log.Println("fetching recipe", req.Url)
 			doUpdate = true
@@ -114,7 +114,7 @@ func summarize(llm *LlmContext, db *DbContext) func(http.ResponseWriter, *http.R
 			}
 		}
 		if doUpdate {
-			err = db.Insert(req.Url, summary)
+			err = db.Insert(ctx, req.Url, summary)
 			if err != nil {
 				log.Printf("Error inserting into db: %v", err)
 			}

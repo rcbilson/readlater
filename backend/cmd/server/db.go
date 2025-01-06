@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/kelseyhightower/envconfig"
@@ -33,20 +34,20 @@ func (ctx *DbContext) Close() {
 }
 
 // Returns a recipe summary if one exists in the database
-func (ctx *DbContext) Get(url string) (string, bool) {
-	row := ctx.db.QueryRow("SELECT summary FROM recipes WHERE url = ?", url)
+func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
+	row := dbctx.db.QueryRowContext(ctx, "SELECT summary FROM recipes WHERE url = ?", url)
 	var summary string
 	err := row.Scan(&summary)
 	if err != nil {
 		return "", false
 	}
-	_, err = ctx.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
+	_, err = dbctx.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
 	return summary, true
 }
 
 // Returns the most recently-accessed recipes
-func (ctx *DbContext) Recents(count int) (recents, error) {
-	rows, err := ctx.db.Query("SELECT summary ->> '$.title', url FROM recipes ORDER BY lastAccess DESC LIMIT ?", count)
+func (dbctx *DbContext) Recents(ctx context.Context, count int) (recents, error) {
+	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM recipes ORDER BY lastAccess DESC LIMIT ?", count)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (ctx *DbContext) Recents(count int) (recents, error) {
 }
 
 // Insert the recipe summary corresponding to the url into the database
-func (ctx *DbContext) Insert(url string, summary string) error {
-	_, err := ctx.db.Exec("INSERT INTO recipes (url, summary, lastAccess) VALUES (?, ?, datetime('now'))", url, summary)
+func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) error {
+	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess) VALUES (?, ?, datetime('now'))", url, summary)
 	return err
 }
