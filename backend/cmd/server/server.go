@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -19,7 +20,7 @@ type specification struct {
 
 type recent struct {
 	Title string `json:"title"`
-	Url   string `Json:"url"`
+	Url   string `json:"url"`
 }
 
 type recents []recent
@@ -39,12 +40,13 @@ func main() {
 
 	db, err := InitializeDb(spec.DbFile)
 	if err != nil {
-		log.Fatal("error initializing databasae interface:", err)
+		log.Fatal("error initializing database interface:", err)
 	}
 	defer db.Close()
 
-	// Handle the /api route in the backend
+	// Handle the api routes in the backend
 	http.Handle("/summarize", http.HandlerFunc(summarize(llm, db)))
+	http.Handle("/recents", http.HandlerFunc(fetchRecents(db)))
 	// For show requests, serve up the frontend code
 	http.HandleFunc("/show/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
@@ -57,6 +59,28 @@ func main() {
 func logError(w http.ResponseWriter, msg string, code int) {
 	log.Printf("%d %s", code, msg)
 	http.Error(w, msg, code)
+}
+
+func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+                var err error
+		count := 5
+		countStr, ok := r.URL.Query()["count"]
+		if ok {
+			count, err = strconv.Atoi(countStr[0])
+			if err != nil {
+				logError(w, fmt.Sprintf("Invalid count specification: %s", countStr[0]), http.StatusBadRequest)
+				return
+			}
+		}
+		recentList, err := db.Recents(count)
+		if err != nil {
+			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(recentList)
+		w.Header().Set("Content-Type", "application/json")
+	}
 }
 
 func summarize(llm *LlmContext, db *DbContext) func(http.ResponseWriter, *http.Request) {

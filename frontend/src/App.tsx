@@ -8,17 +8,18 @@ import {
 } from '@tanstack/react-query'
 
 import ErrorPage from "./ErrorPage.jsx";
-import MainPage from "./MainPage.tsx";
+import ShowPage from "./ShowPage.tsx";
+import RecentPage from "./RecentPage.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <MainPage />,
+    element: <RecentPage />,
     errorElement: <ErrorPage />,
   },
   {
     path: "/show/:recipeUrl",
-    element: <MainPage />
+    element: <ShowPage />
   }
 ]);
 
