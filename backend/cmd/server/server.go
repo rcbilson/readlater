@@ -17,6 +17,13 @@ type specification struct {
 	DbFile       string `default:"/home/richard/src/recipe/data/recipe.db"`
 }
 
+type recent struct {
+	Title string `json:"title"`
+	Url   string `Json:"url"`
+}
+
+type recents []recent
+
 var spec specification
 
 func main() {

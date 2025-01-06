@@ -18,6 +18,10 @@ var urls = [...]string{
 }
 
 func TestFetch(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	for _, url := range urls {
 		bytes, err := fetch(context.Background(), url)
 		if err != nil {
