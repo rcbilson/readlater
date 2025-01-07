@@ -1,5 +1,5 @@
 // Supports weights 100-900
-import '@fontsource-variable/outfit';
+//import '@fontsource-variable/outfit';
 
 import {
   createBrowserRouter,
