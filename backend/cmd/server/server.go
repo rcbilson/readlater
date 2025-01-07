@@ -47,8 +47,8 @@ func main() {
 	// Handle the api routes in the backend
 	http.Handle("/summarize", http.HandlerFunc(summarize(llm, db)))
 	http.Handle("/recents", http.HandlerFunc(fetchRecents(db)))
-	// For show requests, serve up the frontend code
-	http.HandleFunc("/show/", func(w http.ResponseWriter, r *http.Request) {
+	// For other requests, serve up the frontend code
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
 	})
 	http.Handle("/assets/", http.FileServer(http.Dir(spec.FrontendPath)))
