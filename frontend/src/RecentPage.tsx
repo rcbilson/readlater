@@ -19,7 +19,7 @@ const RecentPage: React.FC = () => {
 
   const fetchRecents = async () => {
     console.log("fetching recents");
-    const response = await axios.get<Array<Recent>>("/recents?count=5");
+    const response = await axios.get<Array<Recent>>("/recents?count=10");
     return response.data;
     //return testRecipe;
   };
@@ -52,7 +52,7 @@ const RecentPage: React.FC = () => {
         <div id="heading">Recently viewed:</div>
         <div id="recentList">
           {recents.map((recent) =>
-            <div key={recent.url} onClick={handleRecentClick(recent.url)}>
+            <div className="recentEntry" key={recent.url} onClick={handleRecentClick(recent.url)}>
               <div className="title">{recent.title}</div>
               <div className="url">{recent.url}</div>
             </div>

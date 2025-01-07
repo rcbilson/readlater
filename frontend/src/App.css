@@ -3,6 +3,7 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: left;
+  font-family: 'Outfit Variable', sans-serif;
 }
 
 #searchbar {
@@ -21,4 +22,13 @@
 
 #method {
   line-height: 1.1;
+}
+
+.recentEntry {
+  padding: 0.5em;
+  cursor: pointer;
+}
+
+.recentEntry .url {
+  font-size: 0.75em;
 }
