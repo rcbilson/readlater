@@ -1,4 +1,5 @@
-FROM golang:1.23 AS build-server
+FROM golang:1.23-alpine AS build-server
+RUN apk update && apk add gcc libc-dev
 WORKDIR /src
 COPY backend/go.mod backend/go.sum .
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -19,7 +20,7 @@ RUN yarn install
 COPY frontend .
 RUN yarnpkg run build
 
-FROM golang:1.23
+FROM alpine:latest
 #RUN apk update
 #RUN apk upgrade
 #RUN apk add --no-cache sqlite
