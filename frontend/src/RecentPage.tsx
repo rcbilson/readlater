@@ -45,24 +45,24 @@ const RecentPage: React.FC = () => {
     return <div>An error occurred: {error.message}</div>
   }
 
-  if (recents) {
-    return (
-      <div id="recentContainer">
-        <SearchBar isPending={isPending} onSearch={handleButtonClick} />
-        <div id="heading">Recently viewed:</div>
-        <div id="recentList">
-          {recents.map((recent) =>
-            <div className="recentEntry" key={recent.url} onClick={handleRecentClick(recent.url)}>
-              <div className="title">{recent.title}</div>
-              <div className="url">{recent.url}</div>
-            </div>
-          )}
+  return (
+    <div id="recentContainer">
+      <SearchBar isPending={isPending} onSearch={handleButtonClick} />
+      {recents &&
+        <div>
+          <div id="heading">Recently viewed:</div>
+          <div id="recentList">
+            {recents.map((recent) =>
+              <div className="recentEntry" key={recent.url} onClick={handleRecentClick(recent.url)}>
+                <div className="title">{recent.title}</div>
+                <div className="url">{recent.url}</div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  return <></>;
+      }
+    </div>
+  );
 };
 
 export default RecentPage;
