@@ -67,6 +67,6 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recents, error)
 
 // Insert the recipe summary corresponding to the url into the database
 func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) error {
-	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess) VALUES (?, ?, datetime('now'))", url, summary)
+	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess) VALUES (?, json(?), datetime('now'))", url, summary)
 	return err
 }

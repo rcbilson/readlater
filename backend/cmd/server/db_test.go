@@ -29,13 +29,20 @@ func TestInsertGet(t *testing.T) {
 	db := setupTest(t)
 	ctx := context.Background()
 
-	assert.NilError(t, db.Insert(ctx, "http://example.com", "recipe"))
-	assert.Assert(t, nil != db.Insert(ctx, "http://example.com", "recipe2"))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
+	assert.Assert(t, nil != db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
 	summary, ok := db.Get(ctx, "http://example.com")
 	assert.Assert(t, ok)
-	assert.Equal(t, summary, "recipe")
+	assert.Equal(t, summary, `{"title":"recipe"}`)
 	summary, ok = db.Get(ctx, "http://foo.com")
 	assert.Assert(t, !ok)
+}
+
+func TestBadJson(t *testing.T) {
+	db := setupTest(t)
+	ctx := context.Background()
+
+	assert.Error(t, db.Insert(ctx, "http://example.com", "recipe"), "malformed JSON")
 }
 
 func TestRecents(t *testing.T) {
