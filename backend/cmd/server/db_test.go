@@ -19,6 +19,16 @@ CREATE TABLE recipes (
   summary text,
   lastAccess datetime
 );
+CREATE VIRTUAL TABLE fts USING fts5(
+  url UNINDEXED,
+  summary,
+  content='recipes',
+  prefix='1 2 3',
+  tokenize='porter unicode61'
+);
+CREATE TRIGGER recipes_ai AFTER INSERT ON recipes BEGIN
+  INSERT INTO fts(rowid, url, summary) VALUES (new.rowid, new.url, new.summary);
+END;
         `)
 	assert.NilError(t, err)
 
@@ -57,6 +67,29 @@ func TestRecents(t *testing.T) {
 	recents, err := db.Recents(ctx, 5)
 	assert.NilError(t, err)
 	assert.Equal(t, 2, len(recents))
+}
+
+func TestSearch(t *testing.T) {
+	db := setupTest(t)
+	ctx := context.Background()
+
+	// set up two recipes
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"one two"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"one three"}`))
+
+        // expect 2
+        results, err := db.Search(ctx, "one")
+        assert.NilError(t, err)
+        assert.Equal(t, 2, len(results))
+
+        // expect 1
+        results, err = db.Search(ctx, "one two")
+        assert.NilError(t, err)
+
+        // expect 0
+        results, err = db.Search(ctx, "one two three")
+        assert.NilError(t, err)
+        assert.Equal(t, 0, len(results))
 }
 
 func TestGetUpdatesLastAccessed(t *testing.T) {

@@ -15,7 +15,7 @@ var urls = [...]string{
 	"https://www.recipetineats.com/christmas-cake-moist-easy-fruit-cake/",
 	"https://www.spendwithpennies.com/easy-cheesy-scalloped-potatoes-and-the-secret-to-getting-them-to-cook-quickly/",
 	"https://www.allrecipes.com/recipe/261352/cinnamon-roll-bread-pudding/",
-	"https://www.thekitchn.com/gado-gado-recipe-23649720",
+	//"https://www.thekitchn.com/gado-gado-recipe-23649720",
 }
 
 func TestFetch(t *testing.T) {

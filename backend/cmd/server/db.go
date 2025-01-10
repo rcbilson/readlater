@@ -46,16 +46,16 @@ func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
 }
 
 // Returns the most recently-accessed recipes
-func (dbctx *DbContext) Recents(ctx context.Context, count int) (recents, error) {
+func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, error) {
 	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM recipes ORDER BY lastAccess DESC LIMIT ?", count)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result recents
+	var result recipeList
 
 	for rows.Next() {
-		var r recent
+		var r recipeEntry
 		err := rows.Scan(&r.Title, &r.Url)
 		if err != nil {
 			return nil, err
@@ -69,4 +69,24 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recents, error)
 func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) error {
 	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess) VALUES (?, json(?), datetime('now'))", url, summary)
 	return err
+}
+
+// Search for recipes matching a pattern
+func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList, error) {
+	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result recipeList
+
+	for rows.Next() {
+		var r recipeEntry
+		err := rows.Scan(&r.Title, &r.Url)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, nil
 }

@@ -18,12 +18,12 @@ type specification struct {
 	DbFile       string `default:"/home/richard/src/recipe/data/recipe.db"`
 }
 
-type recent struct {
+type recipeEntry struct {
 	Title string `json:"title"`
 	Url   string `json:"url"`
 }
 
-type recents []recent
+type recipeList []recipeEntry
 
 var spec specification
 
