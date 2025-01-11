@@ -47,6 +47,7 @@ func main() {
 	// Handle the api routes in the backend
 	http.Handle("/summarize", http.HandlerFunc(summarize(llm, db)))
 	http.Handle("/recents", http.HandlerFunc(fetchRecents(db)))
+	http.Handle("/search", http.HandlerFunc(search(db)))
 	// For other requests, serve up the frontend code
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
@@ -61,9 +62,26 @@ func logError(w http.ResponseWriter, msg string, code int) {
 	http.Error(w, msg, code)
 }
 
+func search(db *DbContext) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query, ok := r.URL.Query()["q"]
+		if !ok {
+			logError(w, "No search terms provided", http.StatusBadRequest)
+			return
+		}
+		list, err := db.Search(r.Context(), query[0])
+		if err != nil {
+			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(list)
+		w.Header().Set("Content-Type", "application/json")
+	}
+}
+
 func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-                var err error
+		var err error
 		count := 5
 		countStr, ok := r.URL.Query()["count"]
 		if ok {
@@ -75,7 +93,7 @@ func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
 		}
 		recentList, err := db.Recents(r.Context(), count)
 		if err != nil {
-			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusBadRequest)
+			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusInternalServerError)
 			return
 		}
 		json.NewEncoder(w).Encode(recentList)

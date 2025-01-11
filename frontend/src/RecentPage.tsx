@@ -2,7 +2,7 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
@@ -15,24 +15,32 @@ type Recent = {
 }
 
 const RecentPage: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [searchText, setSearchText] = useState("");
 
-  const fetchRecents = async () => {
-    console.log("fetching recents");
-    const response = await axios.get<Array<Recent>>("/recents?count=10");
-    return response.data;
-    //return testRecipe;
+  const fetchQuery = (queryPath: string) => {
+    return async () => {
+      console.log("fetching " + queryPath);
+      const response = await axios.get<Array<Recent>>(queryPath);
+      return response.data;
+      //return testRecipe;
+    };
   };
 
   const {isPending, isError, data, error} = useQuery({
-    queryKey: ['recents'],
-    queryFn: fetchRecents,
+    queryKey: ['recents', searchText],
+    queryFn: fetchQuery(searchText != "" ? "/search?q=" + encodeURIComponent(searchText) : "/recents?count=10"),
   });
   const recents = data;
   
-  const handleButtonClick = (searchText: string) => {
-    if (!searchText) return;
-    navigate("/show/" + encodeURIComponent(searchText));
+  const handleButtonClick = (text: string) => {
+    setSearchText(text);
+    if (!text) return;
+    try {
+      new URL(text);
+      navigate("/show/" + encodeURIComponent(searchText));
+    } catch (_) {
+    }
   };
 
   const handleRecentClick = (url: string) => {
@@ -45,12 +53,17 @@ const RecentPage: React.FC = () => {
     return <div>An error occurred: {error.message}</div>
   }
 
+  let heading = "Recently viewed:";
+  if (searchText) {
+    heading = "Search results:";
+  }
+
   return (
     <div id="recentContainer">
       <SearchBar isPending={isPending} onSearch={handleButtonClick} />
       {recents &&
         <div>
-          <div id="heading">Recently viewed:</div>
+          <div id="heading">{heading}</div>
           <div id="recentList">
             {recents.map((recent) =>
               <div className="recentEntry" key={recent.url} onClick={handleRecentClick(recent.url)}>

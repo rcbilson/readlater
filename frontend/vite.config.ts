@@ -9,6 +9,7 @@ export default defineConfig({
       // string shorthand: http://localhost:5173/foo -> http://localhost:4567/foo
       '/summarize': 'http://localhost:9000',
       '/recents': 'http://localhost:9000',
+      '/search': 'http://localhost:9000',
     },
   }, 
 })
