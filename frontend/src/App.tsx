@@ -13,6 +13,7 @@ import {
 import ErrorPage from "./ErrorPage.jsx";
 import ShowPage from "./ShowPage.tsx";
 import RecentPage from "./RecentPage.tsx";
+import SearchPage from "./SearchPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
   {
     path: "/show/:recipeUrl",
     element: <ShowPage />
+  },
+  {
+    path: "/search",
+    element: <SearchPage />
   }
 ]);
 

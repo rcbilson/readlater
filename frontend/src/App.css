@@ -24,11 +24,11 @@
   line-height: 1.1;
 }
 
-.recentEntry {
+.recipeEntry {
   padding: 0.5em;
   cursor: pointer;
 }
 
-.recentEntry .url {
+.recipeEntry .url {
   font-size: 0.75em;
 }

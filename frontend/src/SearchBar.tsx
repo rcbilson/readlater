@@ -6,14 +6,14 @@ interface Props {
   onSearch: (searchText: string) => void;
 }
 
-const SearchBar: React.FC<Props> = ({contents, isPending, onSearch}: Props) => {
+const SearchBar: React.FC<Props> = ({contents, onSearch}: Props) => {
   const handleSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onSearch(event.target.value);
   };
 
   return (
     <div id="searchbar">
-      <input id="url" type="text" value={contents} onChange={handleSearchTextChange} />
+      <input id="url" type="text" value={contents} onChange={handleSearchTextChange} autoFocus />
     </div>
   )
 };

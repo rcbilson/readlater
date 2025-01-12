@@ -3,33 +3,51 @@
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
 import React from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 
 import SearchBar from "./SearchBar.tsx";
 
-type Recent = {
+type RecipeEntry = {
   title: string;
   url: string;
 }
 
-const RecentPage: React.FC = () => {
-  const navigate = useNavigate();
+function useQueryParams() {
+  const { search } = useLocation();
 
-  const fetchQuery = (queryPath: string) => {
+  return React.useMemo(() => new URLSearchParams(search), [search]);
+}
+
+const SearchPage: React.FC = () => {
+  const navigate = useNavigate();
+  const query = useQueryParams();
+
+  const search = query.get("q");
+
+  const fetchQuery = (search: string|null) => {
     return async () => {
-      console.log("fetching " + queryPath);
-      const response = await axios.get<Array<Recent>>(queryPath);
+      if (!search) {
+        return null;
+      }
+      const queryPath = "/api/search?q=" + search;
+      console.log("fetching " + queryPath)
+      const response = await axios.get<Array<RecipeEntry>>(queryPath);
       return response.data;
     };
   };
 
   const {isPending, isError, data, error} = useQuery({
-    queryKey: ['recents'],
-    queryFn: fetchQuery("/api/recents?count=10"),
+    queryKey: ['recents', search],
+    queryFn: fetchQuery(search),
   });
   const recents = data;
+
+  if (!search) {
+    navigate("/");
+    return;
+  }
   
   const handleButtonClick = (searchText: string) => {
     if (!searchText) {
@@ -44,7 +62,7 @@ const RecentPage: React.FC = () => {
     }
   };
 
-  const handleRecentClick = (url: string) => {
+  const handleRecipeEntryClick = (url: string) => {
     return () => {
       navigate("/show/" + encodeURIComponent(url));
     }
@@ -56,13 +74,13 @@ const RecentPage: React.FC = () => {
 
   return (
     <div id="recentContainer">
-      <SearchBar isPending={isPending} onSearch={handleButtonClick} />
+      <SearchBar contents={decodeURIComponent(search)} isPending={isPending} onSearch={handleButtonClick} />
       {recents &&
         <div>
-          <div id="heading">Recently viewed:</div>
+          <div id="heading">Search results:</div>
           <div id="recentList">
             {recents.map((recent) =>
-              <div className="recipeEntry" key={recent.url} onClick={handleRecentClick(recent.url)}>
+              <div className="recipeEntry" key={recent.url} onClick={handleRecipeEntryClick(recent.url)}>
                 <div className="title">{recent.title}</div>
                 <div className="url">{recent.url}</div>
               </div>
@@ -74,4 +92,4 @@ const RecentPage: React.FC = () => {
   );
 };
 
-export default RecentPage;
+export default SearchPage;
