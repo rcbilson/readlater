@@ -10,7 +10,7 @@ COPY backend .
 ARG CGO_ENABLED=1
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \ 
-    go build -o /bin/server ./cmd/server
+    go build --tags fts5 -o /bin/server ./cmd/server
 
 FROM node:23-bullseye AS build-frontend
 WORKDIR /src
