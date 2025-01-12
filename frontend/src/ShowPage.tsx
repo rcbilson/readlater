@@ -44,7 +44,7 @@ const MainPage: React.FC = () => {
 
     console.log("fetching " + recipeUrl);
     const request : RecipeRequest = { url: recipeUrl };
-    const response = await axios.post<Recipe>("/summarize", request);
+    const response = await axios.post<Recipe>("/api/summarize", request);
     return response.data;
     //return testRecipe;
   };

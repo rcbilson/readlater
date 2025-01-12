@@ -23,13 +23,12 @@ const RecentPage: React.FC = () => {
       console.log("fetching " + queryPath);
       const response = await axios.get<Array<Recent>>(queryPath);
       return response.data;
-      //return testRecipe;
     };
   };
 
   const {isPending, isError, data, error} = useQuery({
     queryKey: ['recents', searchText],
-    queryFn: fetchQuery(searchText != "" ? "/search?q=" + encodeURIComponent(searchText) : "/recents?count=10"),
+    queryFn: fetchQuery(searchText != "" ? "/api/search?q=" + encodeURIComponent(searchText) : "/api/recents?count=10"),
   });
   const recents = data;
   

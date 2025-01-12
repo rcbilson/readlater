@@ -45,9 +45,9 @@ func main() {
 	defer db.Close()
 
 	// Handle the api routes in the backend
-	http.Handle("/summarize", http.HandlerFunc(summarize(llm, db)))
-	http.Handle("/recents", http.HandlerFunc(fetchRecents(db)))
-	http.Handle("/search", http.HandlerFunc(search(db)))
+	http.Handle("/api/summarize", http.HandlerFunc(summarize(llm, db)))
+	http.Handle("/api/recents", http.HandlerFunc(fetchRecents(db)))
+	http.Handle("/api/search", http.HandlerFunc(search(db)))
 	// For other requests, serve up the frontend code
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
