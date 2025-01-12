@@ -3,12 +3,12 @@
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
 import React, { useState, useCallback, useEffect } from "react";
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from "axios";
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 
-import SearchBar from "./SearchBar.tsx";
+import NavWidget from "./NavWidget.tsx";
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -32,9 +32,6 @@ const testRecipe: Recipe = {
 */
 
 const MainPage: React.FC = () => {
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-
   const { recipeUrl } = useParams();
  
   const [debug, setDebug] = useState(false);
@@ -49,21 +46,12 @@ const MainPage: React.FC = () => {
     //return testRecipe;
   };
 
-  const {isPending, isError, data, error} = useQuery({
+  const {isError, data, error} = useQuery({
     queryKey: ['recipe', recipeUrl],
     queryFn: fetchRecipe,
     refetchOnWindowFocus: false,
   });
   const recipe = data;
-  
-  const handleButtonClick = (searchText: string) => {
-    if (!searchText) return;
-    if (searchText != recipeUrl) {
-      navigate("/show/" + encodeURIComponent(searchText));
-    } else {
-      queryClient.invalidateQueries({ queryKey: ['recipe'] })
-    }
-  };
 
   // When CTRL-Q is pressed, switch to debug display
   const checkHotkey = useCallback(
@@ -85,7 +73,7 @@ const MainPage: React.FC = () => {
 
   return (
     <div id="container">
-      <SearchBar contents={recipeUrl} isPending={isPending} onSearch={handleButtonClick} />
+      <NavWidget contents={recipeUrl} />
       {isError && <div>An error occurred: {error.message}</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 

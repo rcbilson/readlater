@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 
-import SearchBar from "./SearchBar.tsx";
+import NavWidget from "./NavWidget.tsx";
 
 type Recent = {
   title: string;
@@ -25,24 +25,11 @@ const RecentPage: React.FC = () => {
     };
   };
 
-  const {isPending, isError, data, error} = useQuery({
+  const {isError, data, error} = useQuery({
     queryKey: ['recents'],
     queryFn: fetchQuery("/api/recents?count=10"),
   });
   const recents = data;
-  
-  const handleButtonClick = (searchText: string) => {
-    if (!searchText) {
-      navigate("/");
-      return;
-    }
-    try {
-      new URL(searchText);
-      navigate("/show/" + encodeURIComponent(searchText));
-    } catch (_) {
-      navigate("/search?q=" + encodeURIComponent(searchText));
-    }
-  };
 
   const handleRecentClick = (url: string) => {
     return () => {
@@ -56,7 +43,7 @@ const RecentPage: React.FC = () => {
 
   return (
     <div id="recentContainer">
-      <SearchBar isPending={isPending} onSearch={handleButtonClick} />
+      <NavWidget/>
       {recents &&
         <div>
           <div id="heading">Recently viewed:</div>

@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 
-import SearchBar from "./SearchBar.tsx";
+import NavWidget from "./NavWidget.tsx";
 
 type RecipeEntry = {
   title: string;
@@ -38,7 +38,7 @@ const SearchPage: React.FC = () => {
     };
   };
 
-  const {isPending, isError, data, error} = useQuery({
+  const {isError, data, error} = useQuery({
     queryKey: ['recents', search],
     queryFn: fetchQuery(search),
   });
@@ -48,19 +48,6 @@ const SearchPage: React.FC = () => {
     navigate("/");
     return;
   }
-  
-  const handleButtonClick = (searchText: string) => {
-    if (!searchText) {
-      navigate("/");
-      return;
-    }
-    try {
-      new URL(searchText);
-      navigate("/show/" + encodeURIComponent(searchText));
-    } catch (_) {
-      navigate("/search?q=" + encodeURIComponent(searchText));
-    }
-  };
 
   const handleRecipeEntryClick = (url: string) => {
     return () => {
@@ -74,7 +61,7 @@ const SearchPage: React.FC = () => {
 
   return (
     <div id="recentContainer">
-      <SearchBar contents={decodeURIComponent(search)} isPending={isPending} onSearch={handleButtonClick} />
+      <NavWidget contents={decodeURIComponent(search)} />
       {recents &&
         <div>
           <div id="heading">Search results:</div>
