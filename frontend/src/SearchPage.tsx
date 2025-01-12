@@ -4,15 +4,9 @@
 // with the recipe contents.
 import React from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from "axios";
-import { useQuery } from '@tanstack/react-query'
 
 import NavWidget from "./NavWidget.tsx";
-
-type RecipeEntry = {
-  title: string;
-  url: string;
-}
+import RecipeQuery from "./RecipeQuery.tsx";
 
 function useQueryParams() {
   const { search } = useLocation();
@@ -26,55 +20,15 @@ const SearchPage: React.FC = () => {
 
   const search = query.get("q");
 
-  const fetchQuery = (search: string|null) => {
-    return async () => {
-      if (!search) {
-        return null;
-      }
-      const queryPath = "/api/search?q=" + search;
-      console.log("fetching " + queryPath)
-      const response = await axios.get<Array<RecipeEntry>>(queryPath);
-      return response.data;
-    };
-  };
-
-  const {isError, data, error} = useQuery({
-    queryKey: ['recents', search],
-    queryFn: fetchQuery(search),
-  });
-  const recents = data;
-
   if (!search) {
     navigate("/");
     return;
   }
 
-  const handleRecipeEntryClick = (url: string) => {
-    return () => {
-      navigate("/show/" + encodeURIComponent(url));
-    }
-  }
-
-  if (isError) {
-    return <div>An error occurred: {error.message}</div>
-  }
-
   return (
     <div id="recentContainer">
       <NavWidget contents={decodeURIComponent(search)} />
-      {recents &&
-        <div>
-          <div id="heading">Search results:</div>
-          <div id="recentList">
-            {recents.map((recent) =>
-              <div className="recipeEntry" key={recent.url} onClick={handleRecipeEntryClick(recent.url)}>
-                <div className="title">{recent.title}</div>
-                <div className="url">{recent.url}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      }
+      <RecipeQuery queryPath={"/api/search?q=" + search} />
     </div>
   );
 };
