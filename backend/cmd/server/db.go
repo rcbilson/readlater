@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/mattn/go-sqlite3"
@@ -73,6 +75,15 @@ func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) 
 
 // Search for recipes matching a pattern
 func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList, error) {
+	if pattern == "" {
+		return nil, nil
+	}
+	// If the final token in the pattern is a letter, add a star to treat it as
+	// a prefix query
+	lastRune, _ := utf8.DecodeLastRuneInString(pattern)
+	if unicode.IsLetter(lastRune) {
+		pattern += "*"
+	}
 	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
 	if err != nil {
 		return nil, err

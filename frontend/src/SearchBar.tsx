@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 interface Props {
   contents?: string;
@@ -7,31 +7,13 @@ interface Props {
 }
 
 const SearchBar: React.FC<Props> = ({contents, isPending, onSearch}: Props) => {
-  const [searchText, setSearchText] = useState(contents ?? "");
-
   const handleSearchTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(event.target.value);
+    onSearch(event.target.value);
   };
-  
-  const handleButtonClick = () => {
-    onSearch(searchText);
-  };
-
-  let buttonText;
-  let buttonDisabled = false;
-  if (isPending) {
-    buttonText = "Loading...";
-    buttonDisabled = true;
-  } else if (searchText == contents) {
-    buttonText = "Refresh";
-  } else {
-    buttonText = "Load";
-  }
 
   return (
     <div id="searchbar">
-      <input id="url" type="text" value={searchText} onChange={handleSearchTextChange} />
-      <button onClick={handleButtonClick} disabled={buttonDisabled}>{buttonText}</button>
+      <input id="url" type="text" value={contents} onChange={handleSearchTextChange} />
     </div>
   )
 };

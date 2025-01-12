@@ -90,6 +90,21 @@ func TestSearch(t *testing.T) {
         results, err = db.Search(ctx, "one two three")
         assert.NilError(t, err)
         assert.Equal(t, 0, len(results))
+
+        // expect 1, auto prefix final token
+        results, err = db.Search(ctx, "one thr")
+        assert.NilError(t, err)
+        assert.Equal(t, 1, len(results))
+
+        // expect 1, phrase match
+        results, err = db.Search(ctx, `"one three"`)
+        assert.NilError(t, err)
+        assert.Equal(t, 1, len(results))
+
+        // expect 0, no auto prefix
+        results, err = db.Search(ctx, `"one thr"`)
+        assert.NilError(t, err)
+        assert.Equal(t, 0, len(results))
 }
 
 func TestGetUpdatesLastAccessed(t *testing.T) {
