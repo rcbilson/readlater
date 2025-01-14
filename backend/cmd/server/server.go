@@ -133,6 +133,10 @@ func summarize(llm *LlmContext, db *DbContext) func(http.ResponseWriter, *http.R
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary)
+			if err.Error() == "malformed JSON" {
+				err = db.Insert(ctx, req.Url, `""`)
+				summary = ""
+			}
 			if err != nil {
 				log.Printf("Error inserting into db: %v", err)
 			}

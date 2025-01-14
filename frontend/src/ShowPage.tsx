@@ -71,23 +71,25 @@ const MainPage: React.FC = () => {
     };
   }, [checkHotkey]);
 
+  const recipeLink = <a href={recipeUrl}>{recipeUrl}</a>;
+
   return (
     <div id="recipeContainer">
       <NavWidget contents={recipeUrl} />
       {isError && <div>An error occurred: {error.message}</div>}
-      {isPending && <div>We're loading the summary of <a id="url" href={recipeUrl}>{recipeUrl}</a>, just a moment...</div>}
+      {isPending && <div>We're loading a summary of this recipe, just a moment...</div>}
+      {!isPending && !recipe && <div>We don't have a summary for {recipeLink}. You can see the original by clicking the link.</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
-          <div>
-            <div id="title">{recipe.title}</div>
-            <a id="url" href={recipeUrl}>{recipeUrl}</a>
-            <ErrorBoundary
-                fallback={<div>We weren't able to summarize this recipe. You can see the original by clicking the link above.</div>}>
-              <div id="method">
-                {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
-                {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
-              </div>
-            </ErrorBoundary>
+        <div>
+          <a id="title" href={recipeUrl}>{recipe.title}</a>
+          <ErrorBoundary
+              fallback={<div>We weren't able to summarize {recipeLink}. You can see the original by clicking the link.</div>}>
+            <div id="method">
+              {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
+              {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
+            </div>
+          </ErrorBoundary>
         </div>
       }
     </div>
