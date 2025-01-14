@@ -46,7 +46,7 @@ const MainPage: React.FC = () => {
     //return testRecipe;
   };
 
-  const {isError, data, error} = useQuery({
+  const {isPending, isError, data, error} = useQuery({
     queryKey: ['recipe', recipeUrl],
     queryFn: fetchRecipe,
     refetchOnWindowFocus: false,
@@ -72,20 +72,23 @@ const MainPage: React.FC = () => {
   }, [checkHotkey]);
 
   return (
-    <div id="container">
+    <div id="recipeContainer">
       <NavWidget contents={recipeUrl} />
       {isError && <div>An error occurred: {error.message}</div>}
+      {isPending && <div>We're loading the summary of <a id="url" href={recipeUrl}>{recipeUrl}</a>, just a moment...</div>}
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
-	<ErrorBoundary fallback={<div>That didn't work. Maybe try refreshing?</div>}>
           <div>
-           <div id="title">{recipe.title}</div>
-           <div id="method">
-             {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
-             {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
-           </div>
-          </div>
-        </ErrorBoundary>
+            <div id="title">{recipe.title}</div>
+            <a id="url" href={recipeUrl}>{recipeUrl}</a>
+            <ErrorBoundary
+                fallback={<div>We weren't able to summarize this recipe. You can see the original by clicking the link above.</div>}>
+              <div id="method">
+                {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
+                {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
+              </div>
+            </ErrorBoundary>
+        </div>
       }
     </div>
   );

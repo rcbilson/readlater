@@ -20,6 +20,11 @@
   line-height: 1.1;
 }
 
+#url {
+  font-size: 1em;
+  line-height: 1.1;
+}
+
 #method {
   line-height: 1.1;
 }
