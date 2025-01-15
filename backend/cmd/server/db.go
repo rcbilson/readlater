@@ -49,7 +49,7 @@ func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
 
 // Returns the most recently-accessed recipes
 func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, error) {
-	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM recipes ORDER BY lastAccess DESC LIMIT ?", count)
+	rows, err := dbctx.db.QueryContext(ctx, `SELECT summary ->> '$.title', url FROM recipes WHERE summary != '""' ORDER BY lastAccess DESC LIMIT ?`, count)
 	if err != nil {
 		return nil, err
 	}

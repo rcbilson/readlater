@@ -62,6 +62,7 @@ func TestRecents(t *testing.T) {
 	// set up two recipes
 	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
 	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example3.com", `""`))
 
 	// ask for 5, expect 2
 	recents, err := db.Recents(ctx, 5)
