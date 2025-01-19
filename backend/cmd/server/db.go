@@ -36,6 +36,12 @@ func (ctx *DbContext) Close() {
 }
 
 // Returns a recipe summary if one exists in the database
+func (dbctx *DbContext) Hit(ctx context.Context, url string) error {
+	_, err := dbctx.db.Exec("UPDATE recipes SET hitCount = hitCount + 1 WHERE url = ?", url)
+	return err
+}
+
+// Returns a recipe summary if one exists in the database
 func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
 	row := dbctx.db.QueryRowContext(ctx, "SELECT summary FROM recipes WHERE url = ?", url)
 	var summary string
@@ -67,9 +73,29 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, err
 	return result, nil
 }
 
+// Returns the most frequently-accessed recipes
+func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, error) {
+	rows, err := dbctx.db.QueryContext(ctx, `SELECT summary ->> '$.title', url FROM recipes WHERE summary != '""' ORDER BY hitCount DESC LIMIT ?`, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result recipeList
+
+	for rows.Next() {
+		var r recipeEntry
+		err := rows.Scan(&r.Title, &r.Url)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, nil
+}
+
 // Insert the recipe summary corresponding to the url into the database
 func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) error {
-	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess) VALUES (?, json(?), datetime('now'))", url, summary)
+	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess, hitCount) VALUES (?, json(?), datetime('now'), 0)", url, summary)
 	return err
 }
 

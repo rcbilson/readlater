@@ -17,7 +17,8 @@ func setupTest(t *testing.T) *DbContext {
 CREATE TABLE recipes (
   url text primary key,
   summary text,
-  lastAccess datetime
+  lastAccess datetime,
+  hitCount integer
 );
 CREATE VIRTUAL TABLE fts USING fts5(
   url UNINDEXED,
@@ -68,6 +69,29 @@ func TestRecents(t *testing.T) {
 	recents, err := db.Recents(ctx, 5)
 	assert.NilError(t, err)
 	assert.Equal(t, 2, len(recents))
+}
+
+func TestFavorites(t *testing.T) {
+	db := setupTest(t)
+	ctx := context.Background()
+
+	// set up two recipes
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`))
+
+	// ask for 5, expect 2
+	faves, err := db.Favorites(ctx, 5)
+	assert.NilError(t, err)
+	assert.Equal(t, 2, len(faves))
+
+        // hit the one in second place, it should come first
+        secondPlace := faves[1].Url
+        err = db.Hit(ctx, secondPlace)
+        assert.NilError(t, err)
+	newFaves, err := db.Favorites(ctx, 1)
+	assert.NilError(t, err)
+	assert.Equal(t, 1, len(newFaves))
+	assert.Equal(t, secondPlace, newFaves[0].Url)
 }
 
 func TestSearch(t *testing.T) {

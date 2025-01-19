@@ -6,7 +6,8 @@ sqlite3 data/recipe.db <<EOF
 create table if not exists recipes (
   url text primary key,
   summary text,
-  lastAccess datetime
+  lastAccess datetime,
+  hitCount integer
 );
 
 DROP TABLE IF EXISTS fts;
