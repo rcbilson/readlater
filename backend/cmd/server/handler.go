@@ -144,7 +144,7 @@ func summarize(llm Llm, db Db, fetcher Fetcher) func(http.ResponseWriter, *http.
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary)
-			if err.Error() == "malformed JSON" {
+			if err != nil && err.Error() == "malformed JSON" {
 				err = db.Insert(ctx, req.Url, `""`)
 				summary = ""
 			}
