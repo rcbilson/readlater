@@ -8,31 +8,9 @@ import (
 )
 
 func setupTest(t *testing.T) *DbContext {
-	db, err := InitializeDb(":memory:")
-	//db, err := InitializeDb("test.db")
+	db, err := InitializeTestDb()
 	assert.NilError(t, err)
 	t.Cleanup(db.Close)
-
-	_, err = db.db.Exec(`
-CREATE TABLE recipes (
-  url text primary key,
-  summary text,
-  lastAccess datetime,
-  hitCount integer
-);
-CREATE VIRTUAL TABLE fts USING fts5(
-  url UNINDEXED,
-  summary,
-  content='recipes',
-  prefix='1 2 3',
-  tokenize='porter unicode61'
-);
-CREATE TRIGGER recipes_ai AFTER INSERT ON recipes BEGIN
-  INSERT INTO fts(rowid, url, summary) VALUES (new.rowid, new.url, new.summary);
-END;
-        `)
-	assert.NilError(t, err)
-
 	return db
 }
 

@@ -31,6 +31,38 @@ func InitializeDb(dbfile string) (*DbContext, error) {
 	return &ctx, nil
 }
 
+func InitializeTestDb() (*DbContext, error) {
+	db, err := InitializeDb(":memory:")
+	//db, err := InitializeDb("test.db")
+	if err != nil {
+                return nil, err
+        }
+
+	_, err = db.db.Exec(`
+CREATE TABLE recipes (
+  url text primary key,
+  summary text,
+  lastAccess datetime,
+  hitCount integer
+);
+CREATE VIRTUAL TABLE fts USING fts5(
+  url UNINDEXED,
+  summary,
+  content='recipes',
+  prefix='1 2 3',
+  tokenize='porter unicode61'
+);
+CREATE TRIGGER recipes_ai AFTER INSERT ON recipes BEGIN
+  INSERT INTO fts(rowid, url, summary) VALUES (new.rowid, new.url, new.summary);
+END;
+        `)
+	if err != nil {
+                return nil, err
+        }
+
+	return db, err
+}
+
 func (ctx *DbContext) Close() {
 	ctx.db.Close()
 }
