@@ -7,8 +7,8 @@ import (
 	"gotest.tools/assert"
 )
 
-func setupTest(t *testing.T) *DbContext {
-	db, err := InitializeTestDb()
+func setupTest(t *testing.T) (*DbContext) {
+	db, err := NewTestDb()
 	assert.NilError(t, err)
 	t.Cleanup(db.Close)
 	return db

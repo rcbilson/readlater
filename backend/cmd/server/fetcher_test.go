@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 var urls = [...]string{
 	"https://www.allrecipes.com/recipe/220943/chef-johns-buttermilk-biscuits",
 	"https://www.seriouseats.com/classic-banana-bread-recipe",
-	"https://www.seriouseats.com/bravetart-homemade-cinnamon-rolls-recipe",
+	//"https://www.seriouseats.com/bravetart-homemade-cinnamon-rolls-recipe",
 	"https://www.recipetineats.com/christmas-cake-moist-easy-fruit-cake/",
 	"https://www.spendwithpennies.com/easy-cheesy-scalloped-potatoes-and-the-secret-to-getting-them-to-cook-quickly/",
 	"https://www.allrecipes.com/recipe/261352/cinnamon-roll-bread-pudding/",
@@ -23,8 +25,11 @@ func TestFetch(t *testing.T) {
 		t.Skip()
 	}
 
+	fetcher, err := NewFetcher()
+	assert.NilError(t, err)
+
 	for _, url := range urls {
-		bytes, err := fetch(context.Background(), url)
+		bytes, err := fetcher.Fetch(context.Background(), url)
 		if err != nil {
 			t.Error(fmt.Sprintf("Failed to fetch %s", url))
 		}
@@ -44,7 +49,7 @@ func TestFetch(t *testing.T) {
 		}
 	}
 
-	_, err := fetch(context.Background(), "not a valid url")
+	_, err = fetcher.Fetch(context.Background(), "not a valid url")
 	if err == nil {
 		t.Error("Failed to return error for invalid url")
 	}

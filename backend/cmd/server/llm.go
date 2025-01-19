@@ -11,12 +11,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
+type Llm interface {
+	Ask(ctx context.Context, recipe []byte) (string, error)
+}
+
 type LlmContext struct {
 	LlmParams
 	client *bedrockruntime.Client
 }
 
-func InitializeLlm(ctx context.Context, params LlmParams) (*LlmContext, error) {
+func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(params.Region))
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't load default configuration: %w", err)

@@ -6,39 +6,39 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/kelseyhightower/envconfig"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type Db interface {
+	Close()
+	Hit(ctx context.Context, url string) error
+	Get(ctx context.Context, url string) (string, bool)
+	Recents(ctx context.Context, count int) (recipeList, error)
+	Favorites(ctx context.Context, count int) (recipeList, error)
+	Insert(ctx context.Context, url string, summary string) error
+	Search(ctx context.Context, pattern string) (recipeList, error)
+}
 
 type DbContext struct {
 	db *sql.DB
 }
 
-func InitializeDb(dbfile string) (*DbContext, error) {
-	var ctx DbContext
-
-	var s specification
-	err := envconfig.Process("recipe", &s)
+func NewDb(dbfile string) (Db, error) {
+	db, err := sql.Open("sqlite3", dbfile)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx.db, err = sql.Open("sqlite3", dbfile)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ctx, nil
+	return &DbContext{db}, nil
 }
 
-func InitializeTestDb() (*DbContext, error) {
-	db, err := InitializeDb(":memory:")
-	//db, err := InitializeDb("test.db")
+func NewTestDb() (*DbContext, error) {
+	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
-                return nil, err
-        }
+		return nil, err
+	}
 
-	_, err = db.db.Exec(`
+	_, err = db.Exec(`
 CREATE TABLE recipes (
   url text primary key,
   summary text,
@@ -57,10 +57,10 @@ CREATE TRIGGER recipes_ai AFTER INSERT ON recipes BEGIN
 END;
         `)
 	if err != nil {
-                return nil, err
-        }
+		return nil, err
+	}
 
-	return db, err
+	return &DbContext{db}, err
 }
 
 func (ctx *DbContext) Close() {

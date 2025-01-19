@@ -22,7 +22,7 @@ func TestRecipes(t *testing.T) {
 		t.Skip()
 	}
 
-	llm, err := InitializeLlm(context.Background(), *theModel)
+	llm, err := NewLlm(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}
