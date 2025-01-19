@@ -48,6 +48,7 @@ func main() {
 	http.Handle("/api/summarize", http.HandlerFunc(summarize(llm, db)))
 	http.Handle("/api/recents", http.HandlerFunc(fetchRecents(db)))
 	http.Handle("/api/search", http.HandlerFunc(search(db)))
+	http.Handle("/api/hit", http.HandlerFunc(hit(db)))
 	// For other requests, serve up the frontend code
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", spec.FrontendPath))
@@ -98,6 +99,22 @@ func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
 		}
 		json.NewEncoder(w).Encode(recentList)
 		w.Header().Set("Content-Type", "application/json")
+	}
+}
+
+func hit(db *DbContext) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		url, ok := r.URL.Query()["url"]
+		if !ok {
+			logError(w, "No search terms provided", http.StatusBadRequest)
+			return
+		}
+		log.Println("hit", url[0])
+		err := db.Hit(r.Context(), url[0])
+		if err != nil {
+			logError(w, "Error updating database", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

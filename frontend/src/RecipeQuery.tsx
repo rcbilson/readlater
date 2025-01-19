@@ -35,7 +35,9 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
 
   const handleRecipeClick = (url: string) => {
     return () => {
-      navigate("/show/" + encodeURIComponent(url));
+      const encodedUrl = encodeURIComponent(url);
+      axios.post("/api/hit?url=" + encodedUrl);
+      navigate("/show/" + encodedUrl);
     }
   }
 
