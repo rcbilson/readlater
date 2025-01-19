@@ -47,6 +47,7 @@ func main() {
 	// Handle the api routes in the backend
 	http.Handle("/api/summarize", http.HandlerFunc(summarize(llm, db)))
 	http.Handle("/api/recents", http.HandlerFunc(fetchRecents(db)))
+	http.Handle("/api/favorites", http.HandlerFunc(fetchFavorites(db)))
 	http.Handle("/api/search", http.HandlerFunc(search(db)))
 	http.Handle("/api/hit", http.HandlerFunc(hit(db)))
 	// For other requests, serve up the frontend code
@@ -102,6 +103,28 @@ func fetchRecents(db *DbContext) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+func fetchFavorites(db *DbContext) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		count := 5
+		countStr, ok := r.URL.Query()["count"]
+		if ok {
+			count, err = strconv.Atoi(countStr[0])
+			if err != nil {
+				logError(w, fmt.Sprintf("Invalid count specification: %s", countStr[0]), http.StatusBadRequest)
+				return
+			}
+		}
+		recentList, err := db.Favorites(r.Context(), count)
+		if err != nil {
+			logError(w, fmt.Sprintf("Error fetching favorite recipes: %v", err), http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(recentList)
+		w.Header().Set("Content-Type", "application/json")
+	}
+}
+
 func hit(db *DbContext) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		url, ok := r.URL.Query()["url"]
@@ -109,7 +132,6 @@ func hit(db *DbContext) func(http.ResponseWriter, *http.Request) {
 			logError(w, "No search terms provided", http.StatusBadRequest)
 			return
 		}
-		log.Println("hit", url[0])
 		err := db.Hit(r.Context(), url[0])
 		if err != nil {
 			logError(w, "Error updating database", http.StatusInternalServerError)
