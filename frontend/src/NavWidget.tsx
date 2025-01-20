@@ -25,6 +25,10 @@ const NavWidget: React.FC<Props> = ({contents}: Props) => {
   return (
     <div id="searchbar">
       <input id="url" type="text" value={contents} onChange={handleSearchTextChange} autoFocus />
+      <div id="navlinks">
+        <a id="recentlink" href="/recent">Recent</a>
+        <a id="favoritelink" href="/favorite">Favorites</a>
+      </div>
     </div>
   )
 };

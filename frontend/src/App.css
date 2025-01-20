@@ -11,6 +11,13 @@
   padding: 1em;
 }
 
+#navlinks {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.5em;
+}
+
 #url {
   flex: 1;
 }
