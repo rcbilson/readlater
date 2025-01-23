@@ -1,8 +1,13 @@
 SHELL=/bin/bash
+SERVICE=recipe
 
+.PHONY: up
+up: docker
+	/n/config/compose up -d ${SERVICE}
+
+.PHONY: docker
 docker:
-	docker compose build
-	docker compose up -d
+	docker build . -t rcbilson/${SERVICE}
 
 .PHONY: frontend
 frontend:
