@@ -71,6 +71,14 @@ const MainPage: React.FC = () => {
     };
   }, [checkHotkey]);
 
+  useEffect(() => {
+    if (recipe && recipe.title) {
+      document.title = "Recipes: " + recipe.title;
+    } else {
+      document.title = "Recipes";
+    }
+  }, [recipe]);
+
   const recipeLink = <a href={recipeUrl}>{recipeUrl}</a>;
 
   return (
