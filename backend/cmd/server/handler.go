@@ -106,7 +106,7 @@ func hit(db Db) func(http.ResponseWriter, *http.Request) {
 		}
 		err := db.Hit(r.Context(), url[0])
 		if err != nil {
-			logError(w, "Error updating database", http.StatusInternalServerError)
+			logError(w, fmt.Sprintf("Error updating database: %v", err), http.StatusInternalServerError)
 			return
 		}
 	}
