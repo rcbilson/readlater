@@ -12,4 +12,4 @@ docker:
 .PHONY: dev
 dev:
 	tmux new-window -c frontend -bt1 yarn dev
-	tmux split-window -c backend/cmd/server go run .
+	tmux split-window -c backend/cmd/server go run -tags fts5 .
