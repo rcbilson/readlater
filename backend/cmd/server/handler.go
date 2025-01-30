@@ -22,11 +22,8 @@ func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string) {
 	http.Handle("/api/favorites", http.HandlerFunc(fetchFavorites(db)))
 	http.Handle("/api/search", http.HandlerFunc(search(db)))
 	http.Handle("/api/hit", http.HandlerFunc(hit(db)))
-	// For other requests, serve up the frontend code
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", frontendPath))
-	})
-	http.Handle("/assets/", http.FileServer(http.Dir(frontendPath)))
+	// For other requests, serve up the frontend assets
+	http.Handle("/", http.FileServer(http.Dir(frontendPath)))
 	log.Println("server listening on port", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
