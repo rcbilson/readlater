@@ -27,7 +27,7 @@ type LlmStats struct {
 func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(params.Region))
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't load default configuration: %w", err)
+		return nil, fmt.Errorf("couldn't load default configuration: %w", err)
 	}
 
 	client := bedrockruntime.NewFromConfig(sdkConfig)
@@ -39,7 +39,7 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte, stats *LlmStats) 
 	name := "recipe"
 	params := &bedrockruntime.ConverseInput{
 		Messages: []types.Message{
-			types.Message{
+			{
 				Content: []types.ContentBlock{
 					&types.ContentBlockMemberText{Value: llm.Prompt},
 					&types.ContentBlockMemberDocument{
@@ -54,7 +54,7 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte, stats *LlmStats) 
 				},
 				Role: types.ConversationRoleUser,
 			},
-			types.Message{
+			{
 				Content: []types.ContentBlock{
 					&types.ContentBlockMemberText{Value: llm.Prefill},
 				},

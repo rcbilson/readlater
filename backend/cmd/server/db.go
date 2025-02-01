@@ -90,7 +90,7 @@ func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	_, err = dbctx.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
+	_, _ = dbctx.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
 	return summary, true
 }
 

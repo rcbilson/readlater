@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,7 +30,7 @@ func TestFetch(t *testing.T) {
 	for _, url := range urls {
 		bytes, err := fetcher.Fetch(context.Background(), url)
 		if err != nil {
-			t.Error(fmt.Sprintf("Failed to fetch %s", url))
+			t.Errorf("Failed to fetch %s", url)
 		}
 
 		// save files for other tests
@@ -39,13 +38,13 @@ func TestFetch(t *testing.T) {
 		path := filepath.Join("testdata", base+".html")
 		file, err := os.Create(path)
 		if err != nil {
-			t.Error(fmt.Sprintf("Error creating file: %v", err))
+			t.Errorf("Error creating file: %v", err)
 		}
 		defer file.Close()
 
 		_, err = file.Write(bytes)
 		if err != nil {
-			t.Error(fmt.Sprintf("Error writing to file: %v", err))
+			t.Errorf("Error writing to file: %v", err)
 		}
 	}
 

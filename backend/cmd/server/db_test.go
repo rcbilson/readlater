@@ -7,7 +7,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func setupTest(t *testing.T) (*DbContext) {
+func setupTest(t *testing.T) *DbContext {
 	db, err := NewTestDb()
 	assert.NilError(t, err)
 	t.Cleanup(db.Close)
@@ -23,7 +23,7 @@ func TestInsertGet(t *testing.T) {
 	summary, ok := db.Get(ctx, "http://example.com")
 	assert.Assert(t, ok)
 	assert.Equal(t, summary, `{"title":"recipe"}`)
-	summary, ok = db.Get(ctx, "http://foo.com")
+	_, ok = db.Get(ctx, "http://foo.com")
 	assert.Assert(t, !ok)
 }
 
@@ -62,10 +62,10 @@ func TestFavorites(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, 2, len(faves))
 
-        // hit the one in second place, it should come first
-        secondPlace := faves[1].Url
-        err = db.Hit(ctx, secondPlace)
-        assert.NilError(t, err)
+	// hit the one in second place, it should come first
+	secondPlace := faves[1].Url
+	err = db.Hit(ctx, secondPlace)
+	assert.NilError(t, err)
 	newFaves, err := db.Favorites(ctx, 1)
 	assert.NilError(t, err)
 	assert.Equal(t, 1, len(newFaves))
@@ -88,6 +88,7 @@ func TestSearch(t *testing.T) {
 	// expect 1
 	results, err = db.Search(ctx, "one two")
 	assert.NilError(t, err)
+	assert.Equal(t, 1, len(results))
 
 	// expect 0
 	results, err = db.Search(ctx, "one two three")

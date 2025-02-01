@@ -40,7 +40,7 @@ func (*FetcherImpl) Fetch(ctx context.Context, url string) ([]byte, error) {
 		for k, v := range res.Header {
 			log.Println("    ", k, ":", v)
 		}
-		return nil, fmt.Errorf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+		return nil, fmt.Errorf("response failed with status code: %d and\nbody: %s", res.StatusCode, body)
 	}
 	if err != nil {
 		return nil, err

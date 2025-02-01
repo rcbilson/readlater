@@ -49,8 +49,6 @@ func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *LlmStats) (stri
 	return string(bytes), nil
 }
 
-const testPort = 9999
-
 var testFetcher = &mockFetcher{}
 
 func summarizeTest(t *testing.T, llm Llm, db Db, url string) {
@@ -101,7 +99,7 @@ func searchTest(t *testing.T, db Db, pattern string, expCount int) {
 	assert.Equal(t, expCount, len(recipeList))
 }
 
-func hitTest(t *testing.T, db Db, urlstr string) {
+func hitTest(_ *testing.T, db Db, urlstr string) {
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hit?url=%s", url.QueryEscape(urlstr)), nil)
 	w := httptest.NewRecorder()
 	hit(db)(w, req)
