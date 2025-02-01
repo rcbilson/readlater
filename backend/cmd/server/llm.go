@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -12,12 +11,17 @@ import (
 )
 
 type Llm interface {
-	Ask(ctx context.Context, recipe []byte) (string, error)
+	Ask(ctx context.Context, recipe []byte, stats *LlmStats) (string, error)
 }
 
 type LlmContext struct {
 	LlmParams
 	client *bedrockruntime.Client
+}
+
+type LlmStats struct {
+	InputTokens  int
+	OutputTokens int
 }
 
 func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
@@ -31,7 +35,7 @@ func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
 	return &LlmContext{LlmParams: params, client: client}, nil
 }
 
-func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
+func (llm *LlmContext) Ask(ctx context.Context, recipe []byte, stats *LlmStats) (string, error) {
 	name := "recipe"
 	params := &bedrockruntime.ConverseInput{
 		Messages: []types.Message{
@@ -71,7 +75,10 @@ func (llm *LlmContext) Ask(ctx context.Context, recipe []byte) (string, error) {
 		return "", err
 	}
 
-	log.Println("Converse usage:", *output.Usage.InputTokens, *output.Usage.OutputTokens)
+	if stats != nil {
+		stats.InputTokens = int(*output.Usage.InputTokens)
+		stats.OutputTokens = int(*output.Usage.OutputTokens)
+	}
 
 	switch v := output.Output.(type) {
 	case *types.ConverseOutputMemberMessage:

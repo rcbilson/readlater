@@ -37,7 +37,7 @@ type recipeListEntryStruct struct {
 
 type recipeListStruct []recipeListEntryStruct
 
-func (llm *mockLlm) Ask(_ context.Context, recipe []byte) (string, error) {
+func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *LlmStats) (string, error) {
 	// split the recipe into words and use each word as an ingredient
 	// this allows us to search for something non-trivial
 	var summary = summaryStruct{

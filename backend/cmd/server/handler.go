@@ -133,10 +133,15 @@ func summarize(llm Llm, db Db, fetcher Fetcher) func(http.ResponseWriter, *http.
 				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
 				return
 			}
-			summary, err = llm.Ask(ctx, recipe)
+			var stats LlmStats
+			summary, err = llm.Ask(ctx, recipe, &stats)
 			if err != nil {
 				logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
 				return
+			}
+			err = db.Usage(ctx, Usage{req.Url, len(recipe), len(summary), stats.InputTokens, stats.OutputTokens})
+			if err != nil {
+				log.Printf("Error updating usage: %v", err)
 			}
 		}
 		if doUpdate {

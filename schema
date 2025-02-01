@@ -10,6 +10,15 @@ create table if not exists recipes (
   hitCount integer
 );
 
+create table if not exists usage (
+  timestamp datetime default current_timestamp,
+  url text,
+  lengthIn integer,
+  lengthOut integer,
+  tokensIn integer,
+  tokensOut integer
+);
+
 DROP TABLE IF EXISTS fts;
 
 CREATE VIRTUAL TABLE fts USING fts5(

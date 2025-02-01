@@ -41,7 +41,7 @@ func TestRecipes(t *testing.T) {
 			t.Error(fmt.Sprintf("%s: error reading file: %v", file, err))
 			continue
 		}
-		summary, err := llm.Ask(context.Background(), bytes)
+		summary, err := llm.Ask(context.Background(), bytes, nil)
 		if err != nil {
 			t.Error(fmt.Sprintf("%s: error communicating with llm: %v", file, err))
 			continue

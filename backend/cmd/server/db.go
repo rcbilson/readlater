@@ -9,6 +9,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Usage struct {
+	Url       string
+	LengthIn  int
+	LengthOut int
+	TokensIn  int
+	TokensOut int
+}
+
 type Db interface {
 	Close()
 	Hit(ctx context.Context, url string) error
@@ -17,6 +25,7 @@ type Db interface {
 	Favorites(ctx context.Context, count int) (recipeList, error)
 	Insert(ctx context.Context, url string, summary string) error
 	Search(ctx context.Context, pattern string) (recipeList, error)
+	Usage(ctx context.Context, usage Usage) error
 }
 
 type DbContext struct {
@@ -158,4 +167,11 @@ func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList,
 		result = append(result, r)
 	}
 	return result, nil
+}
+
+func (dbctx *DbContext) Usage(ctx context.Context, usage Usage) error {
+	_, err := dbctx.db.ExecContext(ctx,
+		"INSERT INTO usage (url, lengthIn, lengthOut, tokensIn, tokensOut) VALUES (?, ?, ?, ?, ?)",
+		usage.Url, usage.LengthIn, usage.LengthOut, usage.TokensIn, usage.TokensOut)
+	return err
 }
