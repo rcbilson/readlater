@@ -99,6 +99,7 @@ const MainPage: React.FC = () => {
   return (
     <div id="recipeContainer">
       <NavWidget contents={recipeUrl} />
+      <hr/>
       {isError && <div>An error occurred: {error.message}</div>}
       {isPending && <div>We're loading a summary of this recipe, just a moment...</div>}
       {!isPending && !recipe && <div>We don't have a summary for {recipeLink}. You can see the original by clicking the link.</div>}
