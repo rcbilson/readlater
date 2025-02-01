@@ -54,6 +54,14 @@ CREATE TABLE recipes (
   lastAccess datetime,
   hitCount integer
 );
+CREATE TABLE IF NOT EXISTS usage (
+  timestamp datetime default current_timestamp,
+  url text,
+  lengthIn integer,
+  lengthOut integer,
+  tokensIn integer,
+  tokensOut integer
+);
 CREATE VIRTUAL TABLE fts USING fts5(
   url UNINDEXED,
   summary,
