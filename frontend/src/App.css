@@ -44,3 +44,16 @@
 .recipeEntry .url {
   font-size: 0.75em;
 }
+
+.textclick {
+  cursor: pointer;
+}
+
+#recipeHeader {
+  display: flex;
+  flex-direction: row;
+}
+
+#recipeHeader #titleBox {
+  flex: 1;
+}

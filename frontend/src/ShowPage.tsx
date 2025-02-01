@@ -33,12 +33,14 @@ const testRecipe: Recipe = {
 
 const MainPage: React.FC = () => {
   const { recipeUrl } = useParams();
+
+  if (!recipeUrl) {
+    return <div>Oops, no recipe here!</div>;
+  }
  
   const [debug, setDebug] = useState(false);
 
   const fetchRecipe = async () => {
-    if (!recipeUrl) return "";
-
     console.log("fetching " + recipeUrl);
     const request : RecipeRequest = { url: recipeUrl };
     const response = await axios.post<Recipe>("/api/summarize", request);
@@ -78,6 +80,19 @@ const MainPage: React.FC = () => {
       document.title = "Recipes";
     }
   }, [recipe]);
+  
+  const handleLinkClick = () => {
+    return () => {
+      navigator.clipboard.writeText(document.location.href);
+    }
+  }
+
+  const handleIngredientClick = (recipe: Recipe) => {
+    return () => {
+      const ingredients = recipe.ingredients.join("\n");
+      navigator.clipboard.writeText(ingredients);
+    }
+  }
 
   const recipeLink = <a href={recipeUrl}>{recipeUrl}</a>;
 
@@ -90,7 +105,16 @@ const MainPage: React.FC = () => {
       {debug && recipe && <pre>{JSON.stringify(recipe, null, 2)}</pre>}
       {!debug && recipe && 
         <div>
-          <a id="title" href={recipeUrl}>{recipe.title}</a>
+          <div id="recipeHeader">
+            <div id="titleBox">
+              <div id="title">{recipe.title}</div>
+              {recipeUrl && <a id="url" href={recipeUrl}>{new URL(recipeUrl).hostname}</a>}
+            </div>
+            <div id="links">
+              <div className="textclick" onClick={handleLinkClick()}>Copy link</div>
+              <div className="textclick" onClick={handleIngredientClick(recipe)}>Copy ingredients</div>
+            </div>
+          </div>
           <ErrorBoundary
               fallback={<div>We weren't able to summarize {recipeLink}. You can see the original by clicking the link.</div>}>
             <div id="method">

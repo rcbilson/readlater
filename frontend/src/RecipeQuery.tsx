@@ -50,7 +50,7 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
       {recents && recents.map((recent) =>
         <div className="recipeEntry" key={recent.url} onClick={handleRecipeClick(recent.url)}>
           <div className="title">{recent.title}</div>
-          <div className="url">{recent.url}</div>
+          <div className="url">{new URL(recent.url).hostname}</div>
         </div>
       )}
     </div>
