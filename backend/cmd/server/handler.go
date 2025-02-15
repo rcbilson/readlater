@@ -17,13 +17,18 @@ type recipeList []recipeEntry
 
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string) {
 	// Handle the api routes in the backend
-	http.Handle("/api/summarize", http.HandlerFunc(summarize(llm, db, fetcher)))
-	http.Handle("/api/recents", http.HandlerFunc(fetchRecents(db)))
-	http.Handle("/api/favorites", http.HandlerFunc(fetchFavorites(db)))
-	http.Handle("/api/search", http.HandlerFunc(search(db)))
-	http.Handle("/api/hit", http.HandlerFunc(hit(db)))
-	// For other requests, serve up the frontend assets
-	http.Handle("/", http.FileServer(http.Dir(frontendPath)))
+	http.Handle("POST /api/summarize", http.HandlerFunc(summarize(llm, db, fetcher)))
+	http.Handle("GET /api/recents", http.HandlerFunc(fetchRecents(db)))
+	http.Handle("GET /api/favorites", http.HandlerFunc(fetchFavorites(db)))
+	http.Handle("GET /api/search", http.HandlerFunc(search(db)))
+	http.Handle("POST /api/hit", http.HandlerFunc(hit(db)))
+        // bundled assets and static resources
+	http.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
+	http.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
+	// For other requests, serve up the frontend code
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", frontendPath))
+	})
 	log.Println("server listening on port", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
