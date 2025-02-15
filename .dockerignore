@@ -1,0 +1,4 @@
+backend/cmd/server/server
+backend/cmd/server/testdata
+frontend/node_modules
+data/
