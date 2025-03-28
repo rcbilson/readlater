@@ -2,5 +2,5 @@ backend/cmd/server/server
 backend/cmd/server/testdata
 *.swp
 frontend/node_modules
-aws.env
+aws
 data/

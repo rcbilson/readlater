@@ -9,6 +9,10 @@ up: docker
 docker:
 	docker build . -t rcbilson/${SERVICE}
 
+.PHONY: server
+server:
+	. ./aws && cd backend/cmd/server && go run -tags fts5 .
+
 .PHONY: dev
 dev:
 	tmux new-window -c frontend -bt1 yarn dev
