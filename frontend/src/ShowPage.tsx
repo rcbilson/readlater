@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
+import { List } from "@chakra-ui/react"
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -96,7 +97,6 @@ const MainPage: React.FC = () => {
 
   return (
     <div id="recipeContainer">
-      <hr/>
       {isError && <div>An error occurred: {error.message}</div>}
       {isPending && <div>We're loading a summary of this recipe, just a moment...</div>}
       {!isPending && !recipe && <div>We don't have a summary for {recipeLink}. You can see the original by clicking the link.</div>}
@@ -116,8 +116,14 @@ const MainPage: React.FC = () => {
           <ErrorBoundary
               fallback={<div>We weren't able to summarize {recipeLink}. You can see the original by clicking the link.</div>}>
             <div id="method">
-              {recipe.ingredients && <ul>{recipe.ingredients.map((ingredient, id) => <li key={id}>{ingredient}</li>)}</ul>}
-              {recipe.method && <ol>{recipe.method.map((step, id) => <li key={id}>{step}</li>)}</ol>}
+              {recipe.ingredients &&
+                <List.Root padding="0.5em">{recipe.ingredients.map((ingredient, id) =>
+                  <List.Item key={id}>{ingredient}</List.Item>)}
+                </List.Root>}
+              {recipe.method &&
+                <List.Root as="ol" padding="0.5em">{recipe.method.map((step, id) =>
+                  <List.Item key={id}>{step}</List.Item>)}
+                </List.Root>}
             </div>
           </ErrorBoundary>
         </div>
