@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from '@chakra-ui/react';
 
 import RecipeQuery from "./RecipeQuery.tsx";
 
 const SearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   return (
     <div>
@@ -14,7 +23,7 @@ const SearchPage: React.FC = () => {
         onChange={(e) => setSearchQuery(e.target.value)}
         mb={4}
       />
-      {searchQuery && <RecipeQuery queryPath={"/api/search?q=" + encodeURIComponent(searchQuery)} />}
+      {debouncedQuery && <RecipeQuery queryPath={"/api/search?q=" + encodeURIComponent(debouncedQuery)} />}
     </div>
   );
 };
