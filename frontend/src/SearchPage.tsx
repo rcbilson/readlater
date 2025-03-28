@@ -18,7 +18,7 @@ const SearchPage: React.FC = () => {
   return (
     <div>
       <Input
-        placeholder="Search bookmarks..."
+        placeholder="Search recipes..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         mb={4}

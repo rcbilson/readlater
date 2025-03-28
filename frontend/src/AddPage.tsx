@@ -28,10 +28,10 @@ const AddPage: React.FC = () => {
                 <Input
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Enter URL to bookmark"
+                    placeholder="Enter recipe URL"
                     mb={4}
                 />
-                <Button type="submit">Add Bookmark</Button>
+                <Button type="submit">Add Recipe</Button>
             </form>
         </>
     );
