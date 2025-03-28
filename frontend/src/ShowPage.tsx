@@ -8,8 +8,6 @@ import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 
-import NavWidget from "./NavWidget.tsx";
-
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
   url: string;
@@ -98,7 +96,6 @@ const MainPage: React.FC = () => {
 
   return (
     <div id="recipeContainer">
-      <NavWidget contents={recipeUrl} />
       <hr/>
       {isError && <div>An error occurred: {error.message}</div>}
       {isPending && <div>We're loading a summary of this recipe, just a moment...</div>}

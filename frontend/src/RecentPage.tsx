@@ -4,13 +4,11 @@
 // with the recipe contents.
 import React from "react";
 
-import NavWidget from "./NavWidget.tsx";
 import RecipeQuery from "./RecipeQuery.tsx";
 
 const RecentPage: React.FC = () => {
   return (
     <div id="recentContainer">
-      <NavWidget/>
       <RecipeQuery queryPath='/api/recents?count=10' />
     </div>
   );

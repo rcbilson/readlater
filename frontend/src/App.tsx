@@ -13,32 +13,18 @@ import { Provider } from "@/components/ui/provider"
 
 import ErrorPage from "./ErrorPage.jsx";
 import ShowPage from "./ShowPage.tsx";
-import RecentPage from "./RecentPage.tsx";
-import FavoritePage from "./FavoritePage.tsx";
-import SearchPage from "./SearchPage.tsx";
+import MainPage from "./MainPage.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <RecentPage />,
+    element: <MainPage />,
     errorElement: <ErrorPage />,
-  },
-  {
-    path: "/recent",
-    element: <RecentPage />,
-  },
-  {
-    path: "/favorite",
-    element: <FavoritePage />,
   },
   {
     path: "/show/:recipeUrl",
     element: <ShowPage />
   },
-  {
-    path: "/search",
-    element: <SearchPage />
-  }
 ]);
 
 const queryClient = new QueryClient()
