@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS build-server
+FROM golang:1.24-alpine AS build-server
 RUN apk update && apk add gcc libc-dev
 WORKDIR /src
 COPY backend/go.mod backend/go.sum .
@@ -15,15 +15,11 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 FROM node:23-bullseye AS build-frontend
 WORKDIR /src
 COPY frontend/package.json frontend/yarn.lock .
-RUN yarn config set network-timeout 300000
-RUN yarn install
+RUN yarn config set network-timeout 300000 && yarn install
 COPY frontend .
 RUN yarnpkg run build
 
 FROM alpine:latest
-#RUN apk update
-#RUN apk upgrade
-#RUN apk add --no-cache sqlite
 COPY --from=build-frontend /src/dist /app/frontend
 COPY --from=build-server /bin /app/bin
 ENV RECIPESERVER_DBFILE=/app/data/recipe.db
