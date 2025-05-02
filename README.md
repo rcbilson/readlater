@@ -20,6 +20,7 @@ using a phone as I often am.
 `make docker` will build a container. I use a docker-compose fragment something
 like this to run it:
 
+```
   recipe:
     image: rcbilson/recipe:latest
     pull_policy: never
@@ -30,6 +31,7 @@ like this to run it:
     volumes:
       - ./recipe/data:/app/data
     restart: unless-stopped
+```
 
 That `aws.env` file needs to set up `AWS_ACCESS_KEY_ID` and
 `AWS_SECRET_ACCESS_KEY` with an IAM user that has permission to access the
