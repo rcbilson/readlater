@@ -9,14 +9,13 @@ up: docker
 docker:
 	docker build . -t rcbilson/${SERVICE}
 
-.PHONY: server
-server:
+.PHONY: backend
+backend:
 	. ./aws && cd backend/cmd/server && go run -tags fts5 .
 
-.PHONY: dev
-dev:
-	tmux new-window -c frontend -bt1 yarn dev
-	tmux split-window -c backend/cmd/server go run -tags fts5 .
+.PHONY: frontend
+frontend:
+	cd frontend && yarn dev
 
 .PHONY: upgrade-frontend
 upgrade-frontend:
@@ -24,7 +23,7 @@ upgrade-frontend:
 
 .PHONY: upgrade-backend
 upgrade-backend:
-	cd backend && go get go@latest && go get -u ./...
+	cd backend && go get go@latest && go get -u ./... && go mod tidy
 
 .PHONY: upgrade
 upgrade: upgrade-frontend upgrade-backend

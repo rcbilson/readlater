@@ -1,11 +1,11 @@
 module knilson.org/recipe
 
-go 1.24.2
+go 1.24.3
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.29.0
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.30.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	gotest.tools v2.2.0+incompatible
