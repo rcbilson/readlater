@@ -47,21 +47,22 @@ func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string) {
+	mux := http.NewServeMux()
 	// Handle the api routes in the backend
-	http.Handle("POST /api/summarize", requireAuth(http.HandlerFunc(summarize(llm, db, fetcher))))
-	http.Handle("GET /api/recents", requireAuth(http.HandlerFunc(fetchRecents(db))))
-	http.Handle("GET /api/favorites", requireAuth(http.HandlerFunc(fetchFavorites(db))))
-	http.Handle("GET /api/search", requireAuth(http.HandlerFunc(search(db))))
-	http.Handle("POST /api/hit", requireAuth(http.HandlerFunc(hit(db))))
+	mux.Handle("POST /api/summarize", requireAuth(http.HandlerFunc(summarize(llm, db, fetcher))))
+	mux.Handle("GET /api/recents", requireAuth(http.HandlerFunc(fetchRecents(db))))
+	mux.Handle("GET /api/favorites", requireAuth(http.HandlerFunc(fetchFavorites(db))))
+	mux.Handle("GET /api/search", requireAuth(http.HandlerFunc(search(db))))
+	mux.Handle("POST /api/hit", requireAuth(http.HandlerFunc(hit(db))))
 	// bundled assets and static resources
-	http.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
-	http.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
+	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
+	mux.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
 	// For other requests, serve up the frontend code
-	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", frontendPath))
 	})
 	log.Println("server listening on port", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
 }
 
 func logError(w http.ResponseWriter, msg string, code int) {
