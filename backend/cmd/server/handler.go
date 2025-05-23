@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"google.golang.org/api/idtoken"
 )
 
 type recipeEntry struct {
@@ -15,14 +19,41 @@ type recipeEntry struct {
 
 type recipeList []recipeEntry
 
+var allowedEmails = map[string]bool{
+	"rcbilson@gmail.com":  true,
+	"j.knetsch@gmail.com": true,
+}
+
+func requireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			logError(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
+			return
+		}
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		payload, err := idtoken.Validate(context.Background(), token, "")
+		if err != nil {
+			logError(w, "Invalid ID token: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+		email, ok := payload.Claims["email"].(string)
+		if !ok || !allowedEmails[email] {
+			logError(w, "Unauthorized user", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
+}
+
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string) {
 	// Handle the api routes in the backend
-	http.Handle("POST /api/summarize", http.HandlerFunc(summarize(llm, db, fetcher)))
-	http.Handle("GET /api/recents", http.HandlerFunc(fetchRecents(db)))
-	http.Handle("GET /api/favorites", http.HandlerFunc(fetchFavorites(db)))
-	http.Handle("GET /api/search", http.HandlerFunc(search(db)))
-	http.Handle("POST /api/hit", http.HandlerFunc(hit(db)))
-        // bundled assets and static resources
+	http.Handle("POST /api/summarize", requireAuth(http.HandlerFunc(summarize(llm, db, fetcher))))
+	http.Handle("GET /api/recents", requireAuth(http.HandlerFunc(fetchRecents(db))))
+	http.Handle("GET /api/favorites", requireAuth(http.HandlerFunc(fetchFavorites(db))))
+	http.Handle("GET /api/search", requireAuth(http.HandlerFunc(search(db))))
+	http.Handle("POST /api/hit", requireAuth(http.HandlerFunc(hit(db))))
+	// bundled assets and static resources
 	http.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
 	http.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
 	// For other requests, serve up the frontend code

@@ -2,10 +2,11 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React from "react";
+import React, { useContext } from "react";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
+import { AuthContext } from "@/components/ui/auth-context";
 
 type RecipeEntry = {
   title: string;
@@ -18,11 +19,14 @@ interface Props {
 
 const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   const navigate = useNavigate();
+  const { token } = useContext(AuthContext);
 
   const fetchQuery = (queryPath: string) => {
     return async () => {
       console.log("fetching " + queryPath);
-      const response = await axios.get<Array<RecipeEntry>>(queryPath);
+      const response = await axios.get<Array<RecipeEntry>>(queryPath, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       return response.data;
     };
   };
@@ -36,7 +40,9 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   const handleRecipeClick = (url: string) => {
     return () => {
       const encodedUrl = encodeURIComponent(url);
-      axios.post("/api/hit?url=" + encodedUrl);
+      axios.post("/api/hit?url=" + encodedUrl, null, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       navigate("/show/" + encodedUrl);
     }
   }

@@ -2,12 +2,13 @@
 // next to a button with a refresh icon. When the button is clicked,
 // the recipe url is fetched and the text area below the url is updated
 // with the recipe contents.
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useContext } from "react";
 import { useParams } from 'react-router-dom';
 import axios from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 import { List } from "@chakra-ui/react"
+import { AuthContext } from "@/components/ui/auth-context";
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -32,6 +33,7 @@ const testRecipe: Recipe = {
 
 const MainPage: React.FC = () => {
   const { recipeUrl } = useParams();
+  const { token } = useContext(AuthContext);
 
   if (!recipeUrl) {
     return <div>Oops, no recipe here!</div>;
@@ -42,7 +44,9 @@ const MainPage: React.FC = () => {
   const fetchRecipe = async () => {
     console.log("fetching " + recipeUrl);
     const request : RecipeRequest = { url: recipeUrl };
-    const response = await axios.post<Recipe>("/api/summarize", request);
+    const response = await axios.post<Recipe>("/api/summarize", request, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     return response.data;
     //return testRecipe;
   };

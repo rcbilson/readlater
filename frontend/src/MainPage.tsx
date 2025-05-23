@@ -1,3 +1,4 @@
+import { RequireAuth } from "@/components/ui/RequireAuth";
 import { Tabs } from '@chakra-ui/react'
 import { LuBookmarkPlus, LuStar, LuClock, LuSearch } from "react-icons/lu"
 
@@ -8,6 +9,7 @@ import AddPage from "./AddPage"
 
 export default function MainPage() {
   return (
+    <RequireAuth>
         <Tabs.Root defaultValue="favorites" variant="line">
           <Tabs.List>
             <Tabs.Trigger value="favorites">
@@ -40,5 +42,6 @@ export default function MainPage() {
             <AddPage />
           </Tabs.Content>
         </Tabs.Root>
+    </RequireAuth>
   )
 }
