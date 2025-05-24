@@ -11,6 +11,7 @@ type specification struct {
 	Port         int    `default:"9000"`
 	FrontendPath string `default:"/home/richard/src/recipe/frontend/dist"`
 	DbFile       string `default:"/home/richard/src/recipe/data/recipe.db"`
+	GClientId    string `default:"250293909105-5da8lue96chip31p2q3ueug0bdvve96o.apps.googleusercontent.com"`
 }
 
 var spec specification
@@ -32,10 +33,10 @@ func main() {
 	}
 	defer db.Close()
 
-        fetcher, err := NewFetcher()
+	fetcher, err := NewFetcher()
 	if err != nil {
 		log.Fatal("error initializing fetcher:", err)
 	}
 
-	handler(llm, db, fetcher, spec.Port, spec.FrontendPath)
+	handler(llm, db, fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
 }

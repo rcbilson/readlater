@@ -24,36 +24,39 @@ var allowedEmails = map[string]bool{
 	"j.knetsch@gmail.com": true,
 }
 
-func requireAuth(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			logError(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
-			return
+func requireAuth(gClientId string) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				logError(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
+				return
+			}
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			payload, err := idtoken.Validate(context.Background(), token, gClientId)
+			if err != nil {
+				logError(w, "Invalid ID token: "+err.Error(), http.StatusUnauthorized)
+				return
+			}
+			email, ok := payload.Claims["email"].(string)
+			if !ok || !allowedEmails[email] {
+				logError(w, "Unauthorized user", http.StatusForbidden)
+				return
+			}
+			next(w, r)
 		}
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		payload, err := idtoken.Validate(context.Background(), token, "")
-		if err != nil {
-			logError(w, "Invalid ID token: "+err.Error(), http.StatusUnauthorized)
-			return
-		}
-		email, ok := payload.Claims["email"].(string)
-		if !ok || !allowedEmails[email] {
-			logError(w, "Unauthorized user", http.StatusForbidden)
-			return
-		}
-		next(w, r)
 	}
 }
 
-func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string) {
+func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
+	auth := requireAuth(gClientId)
 	// Handle the api routes in the backend
-	mux.Handle("POST /api/summarize", requireAuth(http.HandlerFunc(summarize(llm, db, fetcher))))
-	mux.Handle("GET /api/recents", requireAuth(http.HandlerFunc(fetchRecents(db))))
-	mux.Handle("GET /api/favorites", requireAuth(http.HandlerFunc(fetchFavorites(db))))
-	mux.Handle("GET /api/search", requireAuth(http.HandlerFunc(search(db))))
-	mux.Handle("POST /api/hit", requireAuth(http.HandlerFunc(hit(db))))
+	mux.Handle("POST /api/summarize", auth(http.HandlerFunc(summarize(llm, db, fetcher))))
+	mux.Handle("GET /api/recents", auth(http.HandlerFunc(fetchRecents(db))))
+	mux.Handle("GET /api/favorites", auth(http.HandlerFunc(fetchFavorites(db))))
+	mux.Handle("GET /api/search", auth(http.HandlerFunc(search(db))))
+	mux.Handle("POST /api/hit", auth(http.HandlerFunc(hit(db))))
 	// bundled assets and static resources
 	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
 	mux.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
