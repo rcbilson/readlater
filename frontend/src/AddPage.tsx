@@ -26,6 +26,7 @@ const AddPage: React.FC = () => {
             <Toaster />
             <form onSubmit={handleSubmit}>
                 <Input
+                    id="addInput"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="Enter recipe URL"
