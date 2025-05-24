@@ -33,7 +33,7 @@ const testRecipe: Recipe = {
 
 const MainPage: React.FC = () => {
   const { recipeUrl } = useParams();
-  const { token } = useContext(AuthContext);
+  const { token, resetAuth } = useContext(AuthContext);
 
   if (!recipeUrl) {
     return <div>Oops, no recipe here!</div>;
@@ -47,6 +47,9 @@ const MainPage: React.FC = () => {
     const response = await axios.post<Recipe>("/api/summarize", request, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    if (response.status === 401) {
+      resetAuth();
+    }
     return response.data;
     //return testRecipe;
   };

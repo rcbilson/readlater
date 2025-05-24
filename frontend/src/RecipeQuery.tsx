@@ -19,7 +19,7 @@ interface Props {
 
 const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   const navigate = useNavigate();
-  const { token } = useContext(AuthContext);
+  const { token, resetAuth } = useContext(AuthContext);
 
   const fetchQuery = (queryPath: string) => {
     return async () => {
@@ -27,6 +27,9 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
       const response = await axios.get<Array<RecipeEntry>>(queryPath, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      if (response.status === 401) {
+        resetAuth();
+      }
       return response.data;
     };
   };
