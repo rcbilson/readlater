@@ -4,7 +4,7 @@
 // with the recipe contents.
 import React, { useState, useCallback, useEffect, useContext } from "react";
 import { useParams } from 'react-router-dom';
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 import { List } from "@chakra-ui/react"
@@ -42,16 +42,21 @@ const MainPage: React.FC = () => {
   const [debug, setDebug] = useState(false);
 
   const fetchRecipe = async () => {
-    console.log("fetching " + recipeUrl);
-    const request : RecipeRequest = { url: recipeUrl };
-    const response = await axios.post<Recipe>("/api/summarize", request, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (response.status === 401) {
-      resetAuth();
+    try {
+      console.log("fetching " + recipeUrl);
+      const request: RecipeRequest = { url: recipeUrl };
+      const response = await axios.post<Recipe>("/api/summarize", request, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return response.data;
+      //return testRecipe;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        resetAuth();
+      } else {
+        throw error;
+      }
     }
-    return response.data;
-    //return testRecipe;
   };
 
   const {isPending, isError, data, error} = useQuery({

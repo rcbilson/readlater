@@ -4,7 +4,7 @@
 // with the recipe contents.
 import React, { useContext } from "react";
 import { useNavigate } from 'react-router-dom';
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { AuthContext } from "@/components/ui/auth-context";
 
@@ -23,14 +23,19 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
 
   const fetchQuery = (queryPath: string) => {
     return async () => {
-      console.log("fetching " + queryPath);
-      const response = await axios.get<Array<RecipeEntry>>(queryPath, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (response.status === 401) {
-        resetAuth();
+      try {
+        console.log("fetching " + queryPath);
+        const response = await axios.get<Array<RecipeEntry>>(queryPath, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        return response.data;
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.status === 401) {
+          resetAuth();
+        } else {
+          throw error;
+        }
       }
-      return response.data;
     };
   };
 
