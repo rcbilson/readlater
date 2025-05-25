@@ -38,7 +38,32 @@ func NewDb(dbfile string) (Db, error) {
 		return nil, err
 	}
 
+	schemaVersion := 0
+	row := db.QueryRow("SELECT schemaVersion FROM metadata WHERE id = 0")
+	_ = row.Scan(&schemaVersion)
+
+	err = applySchema(db, schemaVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DbContext{db}, nil
+}
+
+func applySchema(db *sql.DB, lastVersion int) error {
+	for _, sql := range schema[lastVersion:] {
+		_, err := db.Exec(sql)
+		if err != nil {
+			return err
+		}
+	}
+	_, err := db.Exec(`INSERT INTO metadata (id, schemaVersion) VALUES (0, @version)
+						ON CONFLICT DO UPDATE SET schemaVersion = @version`,
+		sql.Named("version", len(schema)))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewTestDb() (*DbContext, error) {
@@ -47,32 +72,7 @@ func NewTestDb() (*DbContext, error) {
 		return nil, err
 	}
 
-	_, err = db.Exec(`
-CREATE TABLE recipes (
-  url text primary key,
-  summary text,
-  lastAccess datetime,
-  hitCount integer
-);
-CREATE TABLE IF NOT EXISTS usage (
-  timestamp datetime default current_timestamp,
-  url text,
-  lengthIn integer,
-  lengthOut integer,
-  tokensIn integer,
-  tokensOut integer
-);
-CREATE VIRTUAL TABLE fts USING fts5(
-  url UNINDEXED,
-  summary,
-  content='recipes',
-  prefix='1 2 3',
-  tokenize='porter unicode61'
-);
-CREATE TRIGGER recipes_ai AFTER INSERT ON recipes BEGIN
-  INSERT INTO fts(rowid, url, summary) VALUES (new.rowid, new.url, new.summary);
-END;
-        `)
+	err = applySchema(db, 0)
 	if err != nil {
 		return nil, err
 	}
