@@ -27,7 +27,6 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           onError={() => {
             alert('Login Failed');
           }}
-          auto_select
         />
       </div>
     );
