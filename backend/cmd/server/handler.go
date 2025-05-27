@@ -34,12 +34,10 @@ func requireAuth(db Db, gClientId string) func(http.HandlerFunc) http.HandlerFun
 					return
 				}
 				userNonce := db.GetSession(r.Context(), fields[0])
-				if userNonce != fields[1] {
-					logError(w, "Invalid session cookie", http.StatusUnauthorized)
+				if userNonce == fields[1] {
+					next(w, r)
 					return
 				}
-				next(w, r)
-				return
 			}
 			authHeader := r.Header.Get("Authorization")
 			if !strings.HasPrefix(authHeader, "Bearer ") {
