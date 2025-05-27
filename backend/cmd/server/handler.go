@@ -19,14 +19,28 @@ type recipeEntry struct {
 
 type recipeList []recipeEntry
 
-var allowedEmails = map[string]bool{
-	"rcbilson@gmail.com":  true,
-	"j.knetsch@gmail.com": true,
-}
-
-func requireAuth(gClientId string) func(http.HandlerFunc) http.HandlerFunc {
+func requireAuth(db Db, gClientId string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			session, err := r.Cookie("session")
+			if err != nil && err != http.ErrNoCookie {
+				logError(w, "Unexpected error reading session cookie: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if session != nil {
+				fields := strings.Fields(session.Value)
+				if len(fields) != 2 {
+					logError(w, "Malformed session cookie", http.StatusUnauthorized)
+					return
+				}
+				userNonce := db.GetSession(r.Context(), fields[0])
+				if userNonce != fields[1] {
+					logError(w, "Invalid session cookie", http.StatusUnauthorized)
+					return
+				}
+				next(w, r)
+				return
+			}
 			authHeader := r.Header.Get("Authorization")
 			if !strings.HasPrefix(authHeader, "Bearer ") {
 				logError(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
@@ -39,10 +53,23 @@ func requireAuth(gClientId string) func(http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			email, ok := payload.Claims["email"].(string)
-			if !ok || !allowedEmails[email] {
-				logError(w, "Unauthorized user", http.StatusForbidden)
+			if !ok {
+				logError(w, "No valid email claim", http.StatusUnauthorized)
 				return
 			}
+			nonce := db.GetSession(r.Context(), email)
+			if nonce == "" {
+				logError(w, fmt.Sprintf("No registered user %s", email), http.StatusUnauthorized)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session",
+				Value:    fmt.Sprintf("%s %s", email, nonce),
+				MaxAge:   2592000, // 30 days
+				HttpOnly: true,
+				Secure:   true,
+				SameSite: http.SameSiteStrictMode,
+			})
 			next(w, r)
 		}
 	}
@@ -50,7 +77,7 @@ func requireAuth(gClientId string) func(http.HandlerFunc) http.HandlerFunc {
 
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
-	auth := requireAuth(gClientId)
+	auth := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
 	mux.Handle("POST /api/summarize", auth(http.HandlerFunc(summarize(llm, db, fetcher))))
 	mux.Handle("GET /api/recents", auth(http.HandlerFunc(fetchRecents(db))))

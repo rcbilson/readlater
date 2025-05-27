@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"unicode"
 	"unicode/utf8"
 
@@ -26,6 +27,7 @@ type Db interface {
 	Insert(ctx context.Context, url string, summary string) error
 	Search(ctx context.Context, pattern string) (recipeList, error)
 	Usage(ctx context.Context, usage Usage) error
+	GetSession(ctx context.Context, email string) string
 }
 
 type DbContext struct {
@@ -54,14 +56,14 @@ func applySchema(db *sql.DB, lastVersion int) error {
 	for _, sql := range schema[lastVersion:] {
 		_, err := db.Exec(sql)
 		if err != nil {
-			return err
+			return fmt.Errorf("schema migration failed: %w", err)
 		}
 	}
 	_, err := db.Exec(`INSERT INTO metadata (id, schemaVersion) VALUES (0, @version)
 						ON CONFLICT DO UPDATE SET schemaVersion = @version`,
 		sql.Named("version", len(schema)))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update schema version: %w", err)
 	}
 	return nil
 }
@@ -182,4 +184,11 @@ func (dbctx *DbContext) Usage(ctx context.Context, usage Usage) error {
 		"INSERT INTO usage (url, lengthIn, lengthOut, tokensIn, tokensOut) VALUES (?, ?, ?, ?, ?)",
 		usage.Url, usage.LengthIn, usage.LengthOut, usage.TokensIn, usage.TokensOut)
 	return err
+}
+
+func (dbctx *DbContext) GetSession(ctx context.Context, email string) string {
+	row := dbctx.db.QueryRowContext(ctx, "SELECT nonce FROM session WHERE email = ?", email)
+	var nonce string
+	_ = row.Scan(&nonce)
+	return nonce
 }

@@ -53,4 +53,11 @@ END;
 
 INSERT INTO fts(fts) VALUES('rebuild');
 	`,
+	// version 2
+	`
+CREATE TABLE session (
+  email text,
+  nonce text
+);
+  `,
 }
