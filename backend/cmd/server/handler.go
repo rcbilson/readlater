@@ -1,15 +1,11 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
-
-	"google.golang.org/api/idtoken"
 )
 
 type recipeEntry struct {
@@ -19,58 +15,9 @@ type recipeEntry struct {
 
 type recipeList []recipeEntry
 
-func requireAuth(db Db, gClientId string) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			session, err := r.Cookie("session")
-			if err != nil && err != http.ErrNoCookie {
-				logError(w, "Unexpected error reading session cookie: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if session != nil {
-				fields := strings.Fields(session.Value)
-				if len(fields) != 2 {
-					logError(w, "Malformed session cookie", http.StatusUnauthorized)
-					return
-				}
-				userNonce := db.GetSession(r.Context(), fields[0])
-				if userNonce == fields[1] {
-					next(w, r)
-					return
-				}
-			}
-			authHeader := r.Header.Get("Authorization")
-			if !strings.HasPrefix(authHeader, "Bearer ") {
-				logError(w, "Missing or invalid Authorization header", http.StatusUnauthorized)
-				return
-			}
-			token := strings.TrimPrefix(authHeader, "Bearer ")
-			payload, err := idtoken.Validate(context.Background(), token, gClientId)
-			if err != nil {
-				logError(w, "Invalid ID token: "+err.Error(), http.StatusUnauthorized)
-				return
-			}
-			email, ok := payload.Claims["email"].(string)
-			if !ok {
-				logError(w, "No valid email claim", http.StatusUnauthorized)
-				return
-			}
-			nonce := db.GetSession(r.Context(), email)
-			if nonce == "" {
-				logError(w, fmt.Sprintf("No registered user %s", email), http.StatusUnauthorized)
-				return
-			}
-			http.SetCookie(w, &http.Cookie{
-				Name:     "session",
-				Value:    fmt.Sprintf("%s %s", email, nonce),
-				MaxAge:   2592000, // 30 days
-				HttpOnly: true,
-				Secure:   true,
-				SameSite: http.SameSiteStrictMode,
-			})
-			next(w, r)
-		}
-	}
+type httpError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
