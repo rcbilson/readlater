@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 import { List } from "@chakra-ui/react"
 import { AuthContext } from "@/components/ui/auth-context";
+import { LuShare2 } from "react-icons/lu";
 
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
@@ -94,14 +95,10 @@ const MainPage: React.FC = () => {
   
   const handleLinkClick = () => {
     return () => {
-      navigator.clipboard.writeText(document.location.href);
-    }
-  }
-
-  const handleIngredientClick = (recipe: Recipe) => {
-    return () => {
-      const ingredients = recipe.ingredients.join("\n");
-      navigator.clipboard.writeText(ingredients);
+      if (recipeUrl) {
+        //navigator.clipboard.writeText(recipeUrl);
+        navigator.share({url: recipeUrl});
+      }
     }
   }
 
@@ -118,11 +115,11 @@ const MainPage: React.FC = () => {
           <div id="recipeHeader">
             <div id="titleBox">
               <div id="title">{recipe.title}</div>
-              {recipeUrl && <a id="url" href={recipeUrl}>{new URL(recipeUrl).hostname}</a>}
-            </div>
-            <div id="links">
-              <div className="textclick" onClick={handleLinkClick()}>Copy link</div>
-              <div className="textclick" onClick={handleIngredientClick(recipe)}>Copy ingredients</div>
+              {recipeUrl && 
+                <span>
+                  <a id="url" href={recipeUrl}>{new URL(recipeUrl).hostname}</a>
+                  <LuShare2 onClick={handleLinkClick()} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '1em', cursor: 'pointer' }}/>
+                </span>}
             </div>
           </div>
           <ErrorBoundary
