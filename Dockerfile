@@ -20,8 +20,10 @@ COPY frontend .
 RUN yarnpkg run build
 
 FROM alpine:latest
+RUN apk update && apk add sqlite
 COPY --from=build-frontend /src/dist /app/frontend
 COPY --from=build-server /bin /app/bin
+COPY scripts /bin
 ENV RECIPESERVER_DBFILE=/app/data/recipe.db
 ENV RECIPESERVER_FRONTENDPATH=/app/frontend
 ENV RECIPESERVER_PORT=9093

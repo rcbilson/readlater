@@ -1,0 +1,25 @@
+#!/bin/sh
+
+usage() {
+  echo 'usage: recipe_user [add|remove|invalidate] email-address'
+  echo '       recipe_user show'
+  exit 1
+}
+
+case $1 in
+add|remove|invalidate)
+  test $# -eq 2 || usage
+  email=$2
+  ;;
+show) true ;;
+*) usage ;;
+esac
+
+case $1 in
+add) query="insert into session(email, nonce) values('$email', hex(randomblob(16)));" ;;
+remove) query="delete from session where email='$email';" ;;
+invalidate) query="update session set nonce=hex(randomblob(16)) where email='$email';" ;;
+show) query="select email from session;" ;;
+esac
+
+echo "$query" | sqlite3 $RECIPESERVER_DBFILE

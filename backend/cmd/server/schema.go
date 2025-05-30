@@ -59,5 +59,15 @@ CREATE TABLE session (
   email text,
   nonce text
 );
-  `,
+	`,
+	// version 3
+	`
+CREATE TABLE new_session (
+  email text UNIQUE,
+  nonce text
+);
+INSERT INTO new_session SELECT * FROM session;
+DROP TABLE session;
+ALTER TABLE new_session RENAME TO session;
+	`,
 }
