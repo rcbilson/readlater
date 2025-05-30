@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -24,9 +25,11 @@ func checkCookie(db Db, r *http.Request) *httpError {
 		return &httpError{"Malformed session cookie", http.StatusUnauthorized}
 	}
 
-	userNonce := db.GetSession(r.Context(), fields[0])
-	if userNonce != fields[1] {
-		return &httpError{"Invalid session cookie", http.StatusUnauthorized}
+	email := fields[0]
+	cookieNonce := fields[1]
+	userNonce := db.GetSession(r.Context(), email)
+	if userNonce != cookieNonce {
+		return &httpError{fmt.Sprintf("Invalid session cookie for email %s", email), http.StatusUnauthorized}
 	}
 	return nil
 }
@@ -62,6 +65,7 @@ func checkToken(db Db, gClientId string, w http.ResponseWriter, r *http.Request)
 		SameSite: http.SameSiteStrictMode,
 	})
 
+	log.Printf("token auth for %s succeeded", email)
 	return nil
 }
 
@@ -73,6 +77,7 @@ func requireAuth(db Db, gClientId string) func(http.HandlerFunc) http.HandlerFun
 				next(w, r)
 				return
 			}
+			log.Printf("No session cookie, check for token: %v", err)
 			if err.Code == http.StatusUnauthorized {
 				if err = checkToken(db, gClientId, w, r); err == nil {
 					next(w, r)
