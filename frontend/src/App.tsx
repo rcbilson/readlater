@@ -14,6 +14,7 @@ import { Provider } from "@/components/ui/provider"
 import ErrorPage from "./ErrorPage.jsx";
 import ShowPage from "./ShowPage.tsx";
 import MainPage from "./MainPage.tsx";
+import ShareTarget from "./ShareTarget.tsx";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
     path: "/show/:recipeUrl",
     element: <ShowPage />
   },
+  {
+    path: "/share-target",
+    element: <ShareTarget />
+  }
 ]);
 
 const queryClient = new QueryClient()

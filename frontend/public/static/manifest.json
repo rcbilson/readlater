@@ -17,5 +17,12 @@
             "sizes": "512x512",
             "type": "image/png"
         }
-    ]
+    ],
+    "share_target": {
+        "action": "/share-target/",
+        "method": "GET",
+        "params": {
+            "url": "url"
+        }
+    }
 }
