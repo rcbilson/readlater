@@ -27,7 +27,7 @@ func (*FetcherImpl) Fetch(ctx context.Context, url string) ([]byte, error) {
 		return nil, err
 	}
 	// spoof user agent to work around bot detection
-	req.Header["User-Agent"] = []string{"Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"}
+	req.Header["User-Agent"] = []string{"User-Agent: Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"}
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err

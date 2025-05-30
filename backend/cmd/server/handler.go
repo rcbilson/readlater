@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 type recipeEntry struct {
@@ -14,6 +19,12 @@ type recipeEntry struct {
 }
 
 type recipeList []recipeEntry
+
+type recipe struct {
+	Title       string   `json:"title"`
+	Ingredients []string `json:"ingredients"`
+	Method      []string `json:"method"`
+}
 
 type httpError struct {
 	Message string `json:"message"`
@@ -120,6 +131,65 @@ func hit(db Db) AuthHandlerFunc {
 	}
 }
 
+func findChild(n *html.Node, dataAtom atom.Atom) *html.Node {
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode && c.DataAtom == dataAtom {
+			return c
+		}
+	}
+	return nil
+}
+
+func htmlTitle(page []byte) string {
+	// parse the html in the page and extract the title
+	doc, err := html.Parse(bytes.NewReader(page))
+	if err != nil {
+		return ""
+	}
+
+	htmlNode := findChild(doc, atom.Html)
+	if htmlNode == nil {
+		return ""
+	}
+	headNode := findChild(htmlNode, atom.Head)
+	if headNode == nil {
+		return ""
+	}
+	for n := headNode.FirstChild; n != nil; n = n.NextSibling {
+		if n.Type == html.ElementNode && n.DataAtom == atom.Title {
+			return n.FirstChild.Data
+		}
+	}
+	return ""
+}
+
+func validateRecipe(js *string, html []byte, urlString string) {
+	var r recipe
+	err := json.Unmarshal([]byte(*js), &r)
+	if err == nil && r.Title != "" {
+		// Good enough!
+		return
+	}
+	// Try to extract the title from the HTML
+	title := htmlTitle(html)
+	if title == "" {
+		// In desperation, use the URL
+		parsedUrl, err := url.Parse(urlString)
+		if err == nil {
+			title = parsedUrl.Path
+		} else {
+			title = urlString
+		}
+	}
+
+	r.Title = title
+	b, err := json.Marshal(r)
+	if err == nil {
+		*js = string(b)
+		return
+	}
+}
+
 func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
@@ -154,6 +224,7 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			if err != nil {
 				log.Printf("Error updating usage: %v", err)
 			}
+			validateRecipe(&summary, recipe, req.Url)
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary, user)
