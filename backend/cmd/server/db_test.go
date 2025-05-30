@@ -7,6 +7,8 @@ import (
 	"gotest.tools/assert"
 )
 
+const testUser = User("test@example.com")
+
 func setupTest(t *testing.T) *DbContext {
 	db, err := NewTestDb()
 	assert.NilError(t, err)
@@ -18,8 +20,8 @@ func TestInsertGet(t *testing.T) {
 	db := setupTest(t)
 	ctx := context.Background()
 
-	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
-	assert.Assert(t, nil != db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`, testUser))
+	assert.Assert(t, nil != db.Insert(ctx, "http://example.com", `{"title":"recipe"}`, testUser))
 	summary, ok := db.Get(ctx, "http://example.com")
 	assert.Assert(t, ok)
 	assert.Equal(t, summary, `{"title":"recipe"}`)
@@ -31,7 +33,7 @@ func TestBadJson(t *testing.T) {
 	db := setupTest(t)
 	ctx := context.Background()
 
-	assert.Error(t, db.Insert(ctx, "http://example.com", "recipe"), "malformed JSON")
+	assert.Error(t, db.Insert(ctx, "http://example.com", "recipe", testUser), "malformed JSON")
 }
 
 func TestRecents(t *testing.T) {
@@ -39,9 +41,9 @@ func TestRecents(t *testing.T) {
 	ctx := context.Background()
 
 	// set up two recipes
-	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
-	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`))
-	assert.NilError(t, db.Insert(ctx, "http://example3.com", `""`))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`, testUser))
+	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`, testUser))
+	assert.NilError(t, db.Insert(ctx, "http://example3.com", `""`, testUser))
 
 	// ask for 5, expect 2
 	recents, err := db.Recents(ctx, 5)
@@ -54,8 +56,8 @@ func TestFavorites(t *testing.T) {
 	ctx := context.Background()
 
 	// set up two recipes
-	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
-	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`, testUser))
+	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"recipe2"}`, testUser))
 
 	// ask for 5, expect 2
 	faves, err := db.Favorites(ctx, 5)
@@ -77,8 +79,8 @@ func TestSearch(t *testing.T) {
 	ctx := context.Background()
 
 	// set up two recipes
-	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"one two"}`))
-	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"one three"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"one two"}`, testUser))
+	assert.NilError(t, db.Insert(ctx, "http://example2.com", `{"title":"one three"}`, testUser))
 
 	// expect 2
 	results, err := db.Search(ctx, "one")
@@ -152,7 +154,7 @@ func TestInsertUpdatesLastAccessed(t *testing.T) {
 	assert.Equal(t, "recipe2", recents[0].Title)
 
 	// a inserting example should make it the first result
-	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`))
+	assert.NilError(t, db.Insert(ctx, "http://example.com", `{"title":"recipe"}`, testUser))
 	recents, err = db.Recents(ctx, 1)
 	assert.NilError(t, err)
 	assert.Equal(t, 1, len(recents))

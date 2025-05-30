@@ -24,7 +24,7 @@ type Db interface {
 	Get(ctx context.Context, url string) (string, bool)
 	Recents(ctx context.Context, count int) (recipeList, error)
 	Favorites(ctx context.Context, count int) (recipeList, error)
-	Insert(ctx context.Context, url string, summary string) error
+	Insert(ctx context.Context, url string, summary string, user User) error
 	Search(ctx context.Context, pattern string) (recipeList, error)
 	Usage(ctx context.Context, usage Usage) error
 	GetSession(ctx context.Context, email string) string
@@ -145,8 +145,10 @@ func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, e
 }
 
 // Insert the recipe summary corresponding to the url into the database
-func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string) error {
-	_, err := dbctx.db.ExecContext(ctx, "INSERT INTO recipes (url, summary, lastAccess, hitCount) VALUES (?, json(?), datetime('now'), 0)", url, summary)
+func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string, user User) error {
+	_, err := dbctx.db.ExecContext(ctx,
+		"INSERT INTO recipes (url, summary, user, lastAccess, hitCount) VALUES (?, json(?), ?, datetime('now'), 0)",
+		url, summary, user)
 	return err
 }
 

@@ -121,7 +121,7 @@ func hit(db Db) AuthHandlerFunc {
 }
 
 func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, _ User) {
+	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
 		//return
@@ -156,9 +156,9 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			}
 		}
 		if doUpdate {
-			err = db.Insert(ctx, req.Url, summary)
+			err = db.Insert(ctx, req.Url, summary, user)
 			if err != nil && err.Error() == "malformed JSON" {
-				err = db.Insert(ctx, req.Url, `""`)
+				err = db.Insert(ctx, req.Url, `""`, user)
 				summary = ""
 			}
 			if err != nil {
