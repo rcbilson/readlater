@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // This component acts as a PWA share target. It reads the shared URL from the POSTed form data
