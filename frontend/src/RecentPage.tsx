@@ -9,7 +9,7 @@ import RecipeQuery from "./RecipeQuery.tsx";
 const RecentPage: React.FC = () => {
   return (
     <div id="recentContainer">
-      <RecipeQuery queryPath='/api/recents?count=10' />
+      <RecipeQuery queryPath='/api/recents?count=50' />
     </div>
   );
 };

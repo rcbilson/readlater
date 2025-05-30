@@ -5,7 +5,7 @@ import RecipeQuery from "./RecipeQuery.tsx";
 const FavoritePage: React.FC = () => {
   return (
     <div id="recentContainer">
-      <RecipeQuery queryPath='/api/favorites?count=10' />
+      <RecipeQuery queryPath='/api/favorites?count=50' />
     </div>
   );
 };
