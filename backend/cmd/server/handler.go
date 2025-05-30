@@ -22,13 +22,12 @@ type httpError struct {
 
 func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
-	auth := requireAuth(db, gClientId)
+	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
-	mux.Handle("POST /api/summarize", auth(http.HandlerFunc(summarize(llm, db, fetcher))))
-	mux.Handle("GET /api/recents", auth(http.HandlerFunc(fetchRecents(db))))
-	mux.Handle("GET /api/favorites", auth(http.HandlerFunc(fetchFavorites(db))))
-	mux.Handle("GET /api/search", auth(http.HandlerFunc(search(db))))
-	mux.Handle("POST /api/hit", auth(http.HandlerFunc(hit(db))))
+	mux.Handle("POST /api/summarize", authHandler(summarize(llm, db, fetcher)))
+	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
+	mux.Handle("GET /api/favorites", authHandler(fetchFavorites(db)))
+	mux.Handle("GET /api/search", authHandler(search(db)))
 	// bundled assets and static resources
 	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
 	mux.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
@@ -45,8 +44,8 @@ func logError(w http.ResponseWriter, msg string, code int) {
 	http.Error(w, msg, code)
 }
 
-func search(db Db) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func search(db Db) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		query, ok := r.URL.Query()["q"]
 		if !ok {
 			logError(w, "No search terms provided", http.StatusBadRequest)
@@ -62,8 +61,8 @@ func search(db Db) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func fetchRecents(db Db) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func fetchRecents(db Db) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
 		count := 5
 		countStr, ok := r.URL.Query()["count"]
@@ -84,8 +83,8 @@ func fetchRecents(db Db) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func fetchFavorites(db Db) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func fetchFavorites(db Db) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
 		count := 5
 		countStr, ok := r.URL.Query()["count"]
@@ -106,8 +105,8 @@ func fetchFavorites(db Db) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func hit(db Db) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func hit(db Db) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		url, ok := r.URL.Query()["url"]
 		if !ok {
 			logError(w, "No search terms provided", http.StatusBadRequest)
@@ -121,8 +120,8 @@ func hit(db Db) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func summarize(llm Llm, db Db, fetcher Fetcher) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
 		//return

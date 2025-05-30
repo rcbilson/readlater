@@ -70,4 +70,9 @@ INSERT INTO new_session SELECT * FROM session;
 DROP TABLE session;
 ALTER TABLE new_session RENAME TO session;
 	`,
+	// version 4
+	`
+ALTER TABLE recipes ADD COLUMN user text;
+UPDATE recipes set user = 'rcbilson@gmail.com';
+	`,
 }

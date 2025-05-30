@@ -60,7 +60,7 @@ func summarizeTest(t *testing.T, llm Llm, db Db, url string) {
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/summarize", bytes.NewReader(data))
 	w := httptest.NewRecorder()
-	summarize(llm, db, testFetcher)(w, req)
+	summarize(llm, db, testFetcher)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
@@ -70,10 +70,10 @@ func summarizeTest(t *testing.T, llm Llm, db Db, url string) {
 	assert.Equal(t, "summary for html for "+url, summary.Title)
 }
 
-func listTest(t *testing.T, handler func(http.ResponseWriter, *http.Request), reqName string, reqCount int, expCount int, resultList *recipeListStruct) {
+func listTest(t *testing.T, handler AuthHandlerFunc, reqName string, reqCount int, expCount int, resultList *recipeListStruct) {
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s?count=%d", reqName, reqCount), nil)
 	w := httptest.NewRecorder()
-	handler(w, req)
+	handler(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
@@ -89,7 +89,7 @@ func listTest(t *testing.T, handler func(http.ResponseWriter, *http.Request), re
 func searchTest(t *testing.T, db Db, pattern string, expCount int) {
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/search?q=%s", url.QueryEscape(pattern)), nil)
 	w := httptest.NewRecorder()
-	search(db)(w, req)
+	search(db)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
@@ -102,7 +102,7 @@ func searchTest(t *testing.T, db Db, pattern string, expCount int) {
 func hitTest(_ *testing.T, db Db, urlstr string) {
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hit?url=%s", url.QueryEscape(urlstr)), nil)
 	w := httptest.NewRecorder()
-	hit(db)(w, req)
+	hit(db)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 }
