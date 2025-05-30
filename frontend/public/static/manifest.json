@@ -1,6 +1,5 @@
 {
-    "name": "Recipe App",
-    "short_name": "Recipe",
+    "name": "Recipes",
     "description": "A simple recipe application",
     "start_url": "/",
     "display": "standalone",
@@ -22,7 +21,8 @@
         "action": "/share-target/",
         "method": "GET",
         "params": {
-            "url": "url"
+            "title": "title",
+            "text": "text"
         }
     }
 }
