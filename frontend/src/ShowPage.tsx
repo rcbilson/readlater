@@ -45,8 +45,17 @@ const MainPage: React.FC = () => {
   const fetchRecipe = async () => {
     try {
       console.log("fetching " + recipeUrl);
+      
+      // if we're coming from the share target we might have a title
+      const params = new URLSearchParams(window.location.search);
+      const titleHint = params.get("titleHint");
+      let target = "/api/summarize";
+      if (titleHint) {
+        target += `?titleHint=${encodeURIComponent(titleHint)}`;
+      }
+
       const request: RecipeRequest = { url: recipeUrl };
-      const response = await axios.post<Recipe>("/api/summarize", request, {
+      const response = await axios.post<Recipe>(target, request, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       return response.data;

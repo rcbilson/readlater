@@ -163,26 +163,32 @@ func htmlTitle(page []byte) string {
 	return ""
 }
 
-func validateRecipe(js *string, html []byte, urlString string) {
+func validateRecipe(js *string, html []byte, urlString string, titleHint string) {
 	var r recipe
 	err := json.Unmarshal([]byte(*js), &r)
 	if err == nil && r.Title != "" {
 		// Good enough!
 		return
 	}
-	// Try to extract the title from the HTML
-	title := htmlTitle(html)
-	if title == "" {
+
+	// sometimes the browser gives us the title for nothing
+	r.Title = titleHint
+
+	if r.Title == "" {
+		// Try to extract the title from the HTML
+		r.Title = htmlTitle(html)
+	}
+
+	if r.Title == "" {
 		// In desperation, use the URL
 		parsedUrl, err := url.Parse(urlString)
 		if err == nil {
-			title = parsedUrl.Path
+			r.Title = parsedUrl.Path
 		} else {
-			title = urlString
+			r.Title = urlString
 		}
 	}
 
-	r.Title = title
 	b, err := json.Marshal(r)
 	if err == nil {
 		*js = string(b)
@@ -196,6 +202,14 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
 		//return
 		ctx := r.Context()
+
+		// look for a titleHint from the browser
+		titleHint := ""
+		query, ok := r.URL.Query()["titleHint"]
+		if ok {
+			titleHint = query[0]
+		}
+
 		var req struct {
 			Url string `json:"url"`
 		}
@@ -224,7 +238,7 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			if err != nil {
 				log.Printf("Error updating usage: %v", err)
 			}
-			validateRecipe(&summary, recipe, req.Url)
+			validateRecipe(&summary, recipe, req.Url, titleHint)
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary, user)
