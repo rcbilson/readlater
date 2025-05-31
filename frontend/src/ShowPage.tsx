@@ -14,6 +14,7 @@ import { LuShare2 } from "react-icons/lu";
 // RecipeRequest is a type consisting of the url of a recipe to fetch.
 type RecipeRequest = {
   url: string;
+  titleHint?: string; // optional title hint for the recipe
 }
 
 // Recipe is a type representing a recipe, with a url, a title, a
@@ -49,13 +50,9 @@ const MainPage: React.FC = () => {
       // if we're coming from the share target we might have a title
       const params = new URLSearchParams(window.location.search);
       const titleHint = params.get("titleHint");
-      let target = "/api/summarize";
-      if (titleHint) {
-        target += `?titleHint=${encodeURIComponent(titleHint)}`;
-      }
 
-      const request: RecipeRequest = { url: recipeUrl };
-      const response = await axios.post<Recipe>(target, request, {
+      const request: RecipeRequest = { url: recipeUrl, titleHint: titleHint || undefined };
+      const response = await axios.post<Recipe>("/api/summarize", request, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       return response.data;

@@ -203,15 +203,9 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 		//return
 		ctx := r.Context()
 
-		// look for a titleHint from the browser
-		titleHint := ""
-		query, ok := r.URL.Query()["titleHint"]
-		if ok {
-			titleHint = query[0]
-		}
-
 		var req struct {
-			Url string `json:"url"`
+			Url       string `json:"url"`
+			TitleHint string `json:"titleHint"`
 		}
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
@@ -238,7 +232,7 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			if err != nil {
 				log.Printf("Error updating usage: %v", err)
 			}
-			validateRecipe(&summary, recipe, req.Url, titleHint)
+			validateRecipe(&summary, recipe, req.Url, req.TitleHint)
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary, user)
