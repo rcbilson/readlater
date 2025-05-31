@@ -1,0 +1,22 @@
+#!/bin/sh
+
+urlencode() {
+  echo -n "$*" | jq -sRr @uri
+}
+
+if test $# -ne 4
+then
+  echo usage: $0 [csv] [email] [nonce]
+  exit 1
+fi
+
+csvfile="$1"
+endpoint="$2"
+email="$3"
+nonce="$4"
+
+cat "$csvfile" | while IFS= read -r line
+do
+  obj=$(echo $line | jq -R 'split(",")|{url:.[1],titleHint:.[0]}')
+  curl --cookie "session=$email $nonce" "$endpoint/api/summarize" -d "$obj"
+done
