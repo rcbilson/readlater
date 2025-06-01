@@ -213,6 +213,11 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			return
 		}
 		doUpdate := false
+		_, err = url.Parse(req.Url)
+		if err != nil {
+			logError(w, fmt.Sprintf("Invalid URL: %v", err), http.StatusBadRequest)
+			return
+		}
 		summary, ok := db.Get(ctx, req.Url)
 		if !ok {
 			log.Println("fetching recipe", req.Url)
