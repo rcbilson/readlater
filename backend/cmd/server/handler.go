@@ -14,8 +14,9 @@ import (
 )
 
 type recipeEntry struct {
-	Title string `json:"title"`
-	Url   string `json:"url"`
+	Title      string `json:"title"`
+	Url        string `json:"url"`
+	HasSummary bool   `json:"hasSummary"`
 }
 
 type recipeList []recipeEntry

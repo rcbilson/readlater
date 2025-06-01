@@ -104,9 +104,15 @@ func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
 	return summary, true
 }
 
+const listQuery = `
+		SELECT summary ->> '$.title', url,
+			   (summary ->> '$.ingredients' IS NOT NULL) AND (summary ->> '$.method' IS NOT NULL)
+		FROM recipes WHERE summary != '""' ORDER BY %s DESC LIMIT ?;`
+
 // Returns the most recently-accessed recipes
 func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, error) {
-	rows, err := dbctx.db.QueryContext(ctx, `SELECT summary ->> '$.title', url FROM recipes WHERE summary != '""' ORDER BY lastAccess DESC LIMIT ?`, count)
+	query := fmt.Sprintf(listQuery, "lastAccess")
+	rows, err := dbctx.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +121,7 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, err
 
 	for rows.Next() {
 		var r recipeEntry
-		err := rows.Scan(&r.Title, &r.Url)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasSummary)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +132,8 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, err
 
 // Returns the most frequently-accessed recipes
 func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, error) {
-	rows, err := dbctx.db.QueryContext(ctx, `SELECT summary ->> '$.title', url FROM recipes WHERE summary != '""' ORDER BY hitCount DESC LIMIT ?`, count)
+	query := fmt.Sprintf(listQuery, "hitCount")
+	rows, err := dbctx.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +142,7 @@ func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, e
 
 	for rows.Next() {
 		var r recipeEntry
-		err := rows.Scan(&r.Title, &r.Url)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasSummary)
 		if err != nil {
 			return nil, err
 		}

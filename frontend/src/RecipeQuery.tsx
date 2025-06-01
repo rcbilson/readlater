@@ -11,6 +11,7 @@ import { AuthContext } from "@/components/ui/auth-context";
 type RecipeEntry = {
   title: string;
   url: string;
+  hasSummary: boolean;
 }
 
 interface Props {
@@ -45,13 +46,17 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   });
   const recents = data;
 
-  const handleRecipeClick = (url: string) => {
+  const handleRecipeClick = (entry: RecipeEntry) => {
     return () => {
-      const encodedUrl = encodeURIComponent(url);
+      const encodedUrl = encodeURIComponent(entry.url);
       axios.post("/api/hit?url=" + encodedUrl, null, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      navigate("/show/" + encodedUrl);
+      if (entry.hasSummary) {
+        navigate("/show/" + encodedUrl);
+      } else {
+        window.open(entry.url, "_blank");
+      }
     }
   }
 
@@ -62,7 +67,7 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   return (
     <div id="recipeList">
       {recents && recents.map((recent) =>
-        <div className="recipeEntry" key={recent.url} onClick={handleRecipeClick(recent.url)}>
+        <div className="recipeEntry" key={recent.url} onClick={handleRecipeClick(recent)}>
           <div className="title">{recent.title}</div>
           <div className="url">{new URL(recent.url).hostname}</div>
         </div>
