@@ -23,6 +23,26 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
+    path: "/recent",
+    element: <MainPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/favorites",
+    element: <MainPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/add",
+    element: <MainPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/search",
+    element: <MainPage />,
+    errorElement: <ErrorPage />,
+  },
+  {
     path: "/show/:recipeUrl",
     element: <ShowPage />
   },
