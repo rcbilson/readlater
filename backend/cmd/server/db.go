@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	_ "github.com/mattn/go-sqlite3"
+	"knilson.org/recipe/sqlite"
 )
 
 type Usage struct {
@@ -35,16 +35,7 @@ type DbContext struct {
 }
 
 func NewDb(dbfile string) (Db, error) {
-	db, err := sql.Open("sqlite3", dbfile)
-	if err != nil {
-		return nil, err
-	}
-
-	schemaVersion := 0
-	row := db.QueryRow("SELECT schemaVersion FROM metadata WHERE id = 0")
-	_ = row.Scan(&schemaVersion)
-
-	err = applySchema(db, schemaVersion)
+	db, err := sqlite.NewFromFile(dbfile, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -52,29 +43,8 @@ func NewDb(dbfile string) (Db, error) {
 	return &DbContext{db}, nil
 }
 
-func applySchema(db *sql.DB, lastVersion int) error {
-	for _, sql := range schema[lastVersion:] {
-		_, err := db.Exec(sql)
-		if err != nil {
-			return fmt.Errorf("schema migration failed: %w", err)
-		}
-	}
-	_, err := db.Exec(`INSERT INTO metadata (id, schemaVersion) VALUES (0, @version)
-						ON CONFLICT DO UPDATE SET schemaVersion = @version`,
-		sql.Named("version", len(schema)))
-	if err != nil {
-		return fmt.Errorf("failed to update schema version: %w", err)
-	}
-	return nil
-}
-
 func NewTestDb() (*DbContext, error) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		return nil, err
-	}
-
-	err = applySchema(db, 0)
+	db, err := sqlite.NewFromMemory(schema)
 	if err != nil {
 		return nil, err
 	}
