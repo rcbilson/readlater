@@ -36,10 +36,5 @@ func main() {
 	}
 	defer db.Close()
 
-	fetcher, err := NewFetcher()
-	if err != nil {
-		log.Fatal("error initializing fetcher:", err)
-	}
-
 	handler(summarizer, db, fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
 }

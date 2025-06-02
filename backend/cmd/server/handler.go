@@ -33,7 +33,7 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(summarizer summarizeFunc, db Repo, fetcher Fetcher, port int, frontendPath string, gClientId string) {
+func handler(summarizer summarizeFunc, db Repo, fetcher fetcherFunc, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
 	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
@@ -198,7 +198,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 	}
 }
 
-func summarize(summarizer summarizeFunc, db Repo, fetcher Fetcher) AuthHandlerFunc {
+func summarize(summarizer summarizeFunc, db Repo, fetcher fetcherFunc) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
@@ -224,7 +224,7 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher Fetcher) AuthHandlerFu
 		if !ok {
 			log.Println("fetching recipe", req.Url)
 			doUpdate = true
-			recipe, err := fetcher.Fetch(ctx, req.Url)
+			recipe, err := fetcher(ctx, req.Url)
 			if err != nil {
 				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
 			} else {

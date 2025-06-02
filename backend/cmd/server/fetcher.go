@@ -8,18 +8,9 @@ import (
 	"net/http"
 )
 
-type Fetcher interface {
-	Fetch(ctx context.Context, url string) ([]byte, error)
-}
+type fetcherFunc func(ctx context.Context, url string) ([]byte, error)
 
-type FetcherImpl struct {
-}
-
-func NewFetcher() (Fetcher, error) {
-	return &FetcherImpl{}, nil
-}
-
-func (*FetcherImpl) Fetch(ctx context.Context, url string) ([]byte, error) {
+func fetcher(ctx context.Context, url string) ([]byte, error) {
 	var httpClient http.Client
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

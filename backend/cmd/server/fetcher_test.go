@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"gotest.tools/assert"
 )
 
 var urls = [...]string{
@@ -26,11 +24,8 @@ func TestFetch(t *testing.T) {
 		t.Skip()
 	}
 
-	fetcher, err := NewFetcher()
-	assert.NilError(t, err)
-
 	for _, url := range urls {
-		bytes, err := fetcher.Fetch(context.Background(), url)
+		bytes, err := fetcher(context.Background(), url)
 		if err != nil {
 			t.Errorf("Failed to fetch %s", url)
 		}
@@ -50,7 +45,7 @@ func TestFetch(t *testing.T) {
 		}
 	}
 
-	_, err = fetcher.Fetch(context.Background(), "not a valid url")
+	_, err := fetcher(context.Background(), "not a valid url")
 	if err == nil {
 		t.Error("Failed to return error for invalid url")
 	}

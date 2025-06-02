@@ -15,10 +15,7 @@ import (
 	"knilson.org/recipe/llm"
 )
 
-type mockFetcher struct {
-}
-
-func (*mockFetcher) Fetch(_ context.Context, url string) ([]byte, error) {
+func mockFetcher(_ context.Context, url string) ([]byte, error) {
 	return []byte("html for " + url), nil
 }
 
@@ -45,8 +42,6 @@ func mockSummarizer(_ context.Context, recipe []byte, stats *llm.Usage) (string,
 	return string(bytes), err
 }
 
-var testFetcher = &mockFetcher{}
-
 func summarizeTest(t *testing.T, db Repo, url string) {
 	var reqData struct {
 		Url string `json:"url"`
@@ -56,7 +51,7 @@ func summarizeTest(t *testing.T, db Repo, url string) {
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/summarize", bytes.NewReader(data))
 	w := httptest.NewRecorder()
-	summarize(mockSummarizer, db, testFetcher)(w, req, User("test@example.com"))
+	summarize(mockSummarizer, db, mockFetcher)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
