@@ -1,4 +1,4 @@
-package main
+package llm
 
 import (
 	"context"
@@ -11,20 +11,27 @@ import (
 )
 
 type Llm interface {
-	Ask(ctx context.Context, recipe []byte, stats *LlmStats) (string, error)
+	Ask(ctx context.Context, recipe []byte, stats *Usage) (string, error)
 }
 
-type LlmContext struct {
-	LlmParams
+type Params struct {
+	Region  string
+	ModelID string
+	Prompt  string
+	Prefill string
+}
+
+type Context struct {
+	Params
 	client *bedrockruntime.Client
 }
 
-type LlmStats struct {
+type Usage struct {
 	InputTokens  int
 	OutputTokens int
 }
 
-func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
+func New(ctx context.Context, params Params) (Llm, error) {
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(params.Region))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load default configuration: %w", err)
@@ -32,10 +39,10 @@ func NewLlm(ctx context.Context, params LlmParams) (Llm, error) {
 
 	client := bedrockruntime.NewFromConfig(sdkConfig)
 
-	return &LlmContext{LlmParams: params, client: client}, nil
+	return &Context{Params: params, client: client}, nil
 }
 
-func (llm *LlmContext) Ask(ctx context.Context, recipe []byte, stats *LlmStats) (string, error) {
+func (llm *Context) Ask(ctx context.Context, recipe []byte, stats *Usage) (string, error) {
 	name := "recipe"
 	params := &bedrockruntime.ConverseInput{
 		Messages: []types.Message{

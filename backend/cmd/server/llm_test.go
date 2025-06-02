@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"knilson.org/recipe/llm"
 )
 
 type recipeJson struct {
@@ -21,7 +23,7 @@ func TestRecipes(t *testing.T) {
 		t.Skip()
 	}
 
-	llm, err := NewLlm(context.Background(), *theModel)
+	llm, err := llm.New(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}

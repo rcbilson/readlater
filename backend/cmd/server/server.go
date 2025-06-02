@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
+	"knilson.org/recipe/llm"
 )
 
 type specification struct {
@@ -22,7 +23,7 @@ func main() {
 		log.Fatal("error reading environment variables:", err)
 	}
 
-	llm, err := NewLlm(context.Background(), *theModel)
+	llm, err := llm.New(context.Background(), *theModel)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}

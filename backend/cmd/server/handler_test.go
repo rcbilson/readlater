@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+	"knilson.org/recipe/llm"
 )
 
 type mockFetcher struct {
@@ -37,7 +38,7 @@ type recipeListEntryStruct struct {
 
 type recipeListStruct []recipeListEntryStruct
 
-func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *LlmStats) (string, error) {
+func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *llm.Usage) (string, error) {
 	// split the recipe into words and use each word as an ingredient
 	// this allows us to search for something non-trivial
 	var summary = summaryStruct{
@@ -51,7 +52,7 @@ func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *LlmStats) (stri
 
 var testFetcher = &mockFetcher{}
 
-func summarizeTest(t *testing.T, llm Llm, db Db, url string) {
+func summarizeTest(t *testing.T, llm llm.Llm, db Db, url string) {
 	var reqData struct {
 		Url string `json:"url"`
 	}

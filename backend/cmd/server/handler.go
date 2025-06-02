@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
+	"knilson.org/recipe/llm"
 )
 
 type recipeEntry struct {
@@ -32,7 +33,7 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(llm Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
+func handler(llm llm.Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
 	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
@@ -197,7 +198,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 	}
 }
 
-func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
+func summarize(l llm.Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
@@ -227,8 +228,8 @@ func summarize(llm Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 			if err != nil {
 				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
 			} else {
-				var stats LlmStats
-				summary, err = llm.Ask(ctx, recipe, &stats)
+				var stats llm.Usage
+				summary, err = l.Ask(ctx, recipe, &stats)
 				if err != nil {
 					logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
 				}
