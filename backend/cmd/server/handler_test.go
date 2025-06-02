@@ -22,10 +22,6 @@ func (*mockFetcher) Fetch(_ context.Context, url string) ([]byte, error) {
 	return []byte("html for " + url), nil
 }
 
-type mockLlm struct {
-	t *testing.T
-}
-
 type summaryStruct struct {
 	Title       string   `json:"title"`
 	Ingredients []string `json:"ingredients"`
@@ -38,7 +34,7 @@ type recipeListEntryStruct struct {
 
 type recipeListStruct []recipeListEntryStruct
 
-func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *llm.Usage) (string, error) {
+func mockSummarizer(_ context.Context, recipe []byte, stats *llm.Usage) (string, error) {
 	// split the recipe into words and use each word as an ingredient
 	// this allows us to search for something non-trivial
 	var summary = summaryStruct{
@@ -46,13 +42,12 @@ func (llm *mockLlm) Ask(_ context.Context, recipe []byte, stats *llm.Usage) (str
 		Ingredients: strings.Split(string(recipe), ":/? "),
 	}
 	bytes, err := json.Marshal(summary)
-	assert.NilError(llm.t, err)
-	return string(bytes), nil
+	return string(bytes), err
 }
 
 var testFetcher = &mockFetcher{}
 
-func summarizeTest(t *testing.T, llm llm.Llm, db Db, url string) {
+func summarizeTest(t *testing.T, db Db, url string) {
 	var reqData struct {
 		Url string `json:"url"`
 	}
@@ -61,7 +56,7 @@ func summarizeTest(t *testing.T, llm llm.Llm, db Db, url string) {
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodPost, "/summarize", bytes.NewReader(data))
 	w := httptest.NewRecorder()
-	summarize(llm, db, testFetcher)(w, req, User("test@example.com"))
+	summarize(mockSummarizer, db, testFetcher)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
@@ -110,19 +105,17 @@ func hitTest(_ *testing.T, db Db, urlstr string) {
 
 // TODO: test something other than the happy path
 func TestHandlers(t *testing.T) {
-	testLlm := &mockLlm{t}
-
 	db, err := NewTestDb()
 	assert.NilError(t, err)
 
 	// basic summarize request
-	summarizeTest(t, testLlm, db, urls[0])
+	summarizeTest(t, db, urls[0])
 
 	// repeating test should produce same result but hit db
-	summarizeTest(t, testLlm, db, urls[0])
+	summarizeTest(t, db, urls[0])
 
 	// set up a second summary in the db
-	summarizeTest(t, testLlm, db, urls[1])
+	summarizeTest(t, db, urls[1])
 
 	// ask for five recents, expect two
 	listTest(t, fetchRecents(db), "recent", 5, 2, nil)

@@ -23,10 +23,12 @@ func TestRecipes(t *testing.T) {
 		t.Skip()
 	}
 
-	llm, err := llm.New(context.Background(), *theModel)
+	llm, err := llm.New(context.Background(), theModel.Params)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}
+
+	summarizer := newSummarizer(llm, *theModel)
 
 	matches, err := filepath.Glob("testdata/*.html")
 	if err != nil {
@@ -42,7 +44,7 @@ func TestRecipes(t *testing.T) {
 			t.Errorf("%s: error reading file: %v", file, err)
 			continue
 		}
-		summary, err := llm.Ask(context.Background(), bytes, nil)
+		summary, err := summarizer(context.Background(), bytes, nil)
 		if err != nil {
 			t.Errorf("%s: error communicating with llm: %v", file, err)
 			continue

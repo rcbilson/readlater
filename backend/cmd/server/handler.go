@@ -33,11 +33,11 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(llm llm.Llm, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
+func handler(summarizer summarizeFunc, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
 	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
-	mux.Handle("POST /api/summarize", authHandler(summarize(llm, db, fetcher)))
+	mux.Handle("POST /api/summarize", authHandler(summarize(summarizer, db, fetcher)))
 	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
 	mux.Handle("GET /api/favorites", authHandler(fetchFavorites(db)))
 	mux.Handle("GET /api/search", authHandler(search(db)))
@@ -198,7 +198,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 	}
 }
 
-func summarize(l llm.Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
+func summarize(summarizer summarizeFunc, db Db, fetcher Fetcher) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
@@ -229,7 +229,7 @@ func summarize(l llm.Llm, db Db, fetcher Fetcher) AuthHandlerFunc {
 				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
 			} else {
 				var stats llm.Usage
-				summary, err = l.Ask(ctx, recipe, &stats)
+				summary, err = summarizer(ctx, recipe, &stats)
 				if err != nil {
 					logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
 				}

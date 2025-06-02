@@ -23,10 +23,12 @@ func main() {
 		log.Fatal("error reading environment variables:", err)
 	}
 
-	llm, err := llm.New(context.Background(), *theModel)
+	llm, err := llm.New(context.Background(), theModel.Params)
 	if err != nil {
 		log.Fatal("error initializing llm interface:", err)
 	}
+
+	summarizer := newSummarizer(llm, *theModel)
 
 	db, err := NewDb(spec.DbFile)
 	if err != nil {
@@ -39,5 +41,5 @@ func main() {
 		log.Fatal("error initializing fetcher:", err)
 	}
 
-	handler(llm, db, fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
+	handler(summarizer, db, fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
 }
