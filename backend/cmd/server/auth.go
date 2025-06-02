@@ -13,7 +13,7 @@ import (
 type User string
 type AuthHandlerFunc func(http.ResponseWriter, *http.Request, User)
 
-func checkCookie(db Db, r *http.Request) (User, *httpError) {
+func checkCookie(db Repo, r *http.Request) (User, *httpError) {
 	session, err := r.Cookie("session")
 	if err != nil && err != http.ErrNoCookie {
 		return "", &httpError{fmt.Sprintf("Unexpected error reading session cookie: %v", err), http.StatusInternalServerError}
@@ -37,7 +37,7 @@ func checkCookie(db Db, r *http.Request) (User, *httpError) {
 	return User(email), nil
 }
 
-func checkToken(db Db, gClientId string, w http.ResponseWriter, r *http.Request) (User, *httpError) {
+func checkToken(db Repo, gClientId string, w http.ResponseWriter, r *http.Request) (User, *httpError) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
 		return "", &httpError{"Missing or invalid Authorization header", http.StatusUnauthorized}
@@ -71,7 +71,7 @@ func checkToken(db Db, gClientId string, w http.ResponseWriter, r *http.Request)
 	return User(email), nil
 }
 
-func requireAuth(db Db, gClientId string) func(AuthHandlerFunc) http.HandlerFunc {
+func requireAuth(db Repo, gClientId string) func(AuthHandlerFunc) http.HandlerFunc {
 	return func(next AuthHandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			var err *httpError

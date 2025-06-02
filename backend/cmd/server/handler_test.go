@@ -47,7 +47,7 @@ func mockSummarizer(_ context.Context, recipe []byte, stats *llm.Usage) (string,
 
 var testFetcher = &mockFetcher{}
 
-func summarizeTest(t *testing.T, db Db, url string) {
+func summarizeTest(t *testing.T, db Repo, url string) {
 	var reqData struct {
 		Url string `json:"url"`
 	}
@@ -82,7 +82,7 @@ func listTest(t *testing.T, handler AuthHandlerFunc, reqName string, reqCount in
 	}
 }
 
-func searchTest(t *testing.T, db Db, pattern string, expCount int) {
+func searchTest(t *testing.T, db Repo, pattern string, expCount int) {
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/search?q=%s", url.QueryEscape(pattern)), nil)
 	w := httptest.NewRecorder()
 	search(db)(w, req, User("test@example.com"))
@@ -95,7 +95,7 @@ func searchTest(t *testing.T, db Db, pattern string, expCount int) {
 	assert.Equal(t, expCount, len(recipeList))
 }
 
-func hitTest(_ *testing.T, db Db, urlstr string) {
+func hitTest(_ *testing.T, db Repo, urlstr string) {
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hit?url=%s", url.QueryEscape(urlstr)), nil)
 	w := httptest.NewRecorder()
 	hit(db)(w, req, User("test@example.com"))
@@ -105,7 +105,7 @@ func hitTest(_ *testing.T, db Db, urlstr string) {
 
 // TODO: test something other than the happy path
 func TestHandlers(t *testing.T) {
-	db, err := NewTestDb()
+	db, err := NewTestRepo()
 	assert.NilError(t, err)
 
 	// basic summarize request

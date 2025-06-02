@@ -33,7 +33,7 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(summarizer summarizeFunc, db Db, fetcher Fetcher, port int, frontendPath string, gClientId string) {
+func handler(summarizer summarizeFunc, db Repo, fetcher Fetcher, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
 	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
@@ -57,7 +57,7 @@ func logError(w http.ResponseWriter, msg string, code int) {
 	http.Error(w, msg, code)
 }
 
-func search(db Db) AuthHandlerFunc {
+func search(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		query, ok := r.URL.Query()["q"]
 		if !ok {
@@ -74,7 +74,7 @@ func search(db Db) AuthHandlerFunc {
 	}
 }
 
-func fetchRecents(db Db) AuthHandlerFunc {
+func fetchRecents(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
 		count := 5
@@ -96,7 +96,7 @@ func fetchRecents(db Db) AuthHandlerFunc {
 	}
 }
 
-func fetchFavorites(db Db) AuthHandlerFunc {
+func fetchFavorites(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
 		count := 5
@@ -118,7 +118,7 @@ func fetchFavorites(db Db) AuthHandlerFunc {
 	}
 }
 
-func hit(db Db) AuthHandlerFunc {
+func hit(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		url, ok := r.URL.Query()["url"]
 		if !ok {
@@ -198,7 +198,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 	}
 }
 
-func summarize(summarizer summarizeFunc, db Db, fetcher Fetcher) AuthHandlerFunc {
+func summarize(summarizer summarizeFunc, db Repo, fetcher Fetcher) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)

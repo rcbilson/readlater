@@ -18,59 +18,47 @@ type Usage struct {
 	TokensOut int
 }
 
-type Db interface {
-	Close()
-	Hit(ctx context.Context, url string) error
-	Get(ctx context.Context, url string) (string, bool)
-	Recents(ctx context.Context, count int) (recipeList, error)
-	Favorites(ctx context.Context, count int) (recipeList, error)
-	Insert(ctx context.Context, url string, summary string, user User) error
-	Search(ctx context.Context, pattern string) (recipeList, error)
-	Usage(ctx context.Context, usage Usage) error
-	GetSession(ctx context.Context, email string) string
-}
-
-type DbContext struct {
+type Repo struct {
 	db *sql.DB
 }
 
-func NewDb(dbfile string) (Db, error) {
+func NewRepo(dbfile string) (Repo, error) {
 	db, err := sqlite.NewFromFile(dbfile, schema)
 	if err != nil {
-		return nil, err
+		return Repo{}, err
 	}
 
-	return &DbContext{db}, nil
+	return Repo{db}, nil
 }
 
-func NewTestDb() (*DbContext, error) {
+func NewTestRepo() (Repo, error) {
 	db, err := sqlite.NewFromMemory(schema)
 	if err != nil {
-		return nil, err
+		return Repo{}, err
 	}
 
-	return &DbContext{db}, err
+	return Repo{db}, err
 }
 
-func (ctx *DbContext) Close() {
+func (ctx *Repo) Close() {
 	ctx.db.Close()
 }
 
 // Returns a recipe summary if one exists in the database
-func (dbctx *DbContext) Hit(ctx context.Context, url string) error {
-	_, err := dbctx.db.Exec("UPDATE recipes SET hitCount = hitCount + 1 WHERE url = ?", url)
+func (repo *Repo) Hit(ctx context.Context, url string) error {
+	_, err := repo.db.Exec("UPDATE recipes SET hitCount = hitCount + 1 WHERE url = ?", url)
 	return err
 }
 
 // Returns a recipe summary if one exists in the database
-func (dbctx *DbContext) Get(ctx context.Context, url string) (string, bool) {
-	row := dbctx.db.QueryRowContext(ctx, "SELECT summary FROM recipes WHERE url = ?", url)
+func (repo *Repo) Get(ctx context.Context, url string) (string, bool) {
+	row := repo.db.QueryRowContext(ctx, "SELECT summary FROM recipes WHERE url = ?", url)
 	var summary string
 	err := row.Scan(&summary)
 	if err != nil {
 		return "", false
 	}
-	_, _ = dbctx.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
+	_, _ = repo.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
 	return summary, true
 }
 
@@ -80,9 +68,9 @@ const listQuery = `
 		FROM recipes WHERE summary != '""' ORDER BY %s DESC LIMIT ?;`
 
 // Returns the most recently-accessed recipes
-func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, error) {
+func (repo *Repo) Recents(ctx context.Context, count int) (recipeList, error) {
 	query := fmt.Sprintf(listQuery, "lastAccess")
-	rows, err := dbctx.db.QueryContext(ctx, query, count)
+	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
@@ -101,9 +89,9 @@ func (dbctx *DbContext) Recents(ctx context.Context, count int) (recipeList, err
 }
 
 // Returns the most frequently-accessed recipes
-func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, error) {
+func (repo *Repo) Favorites(ctx context.Context, count int) (recipeList, error) {
 	query := fmt.Sprintf(listQuery, "hitCount")
-	rows, err := dbctx.db.QueryContext(ctx, query, count)
+	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
@@ -122,15 +110,15 @@ func (dbctx *DbContext) Favorites(ctx context.Context, count int) (recipeList, e
 }
 
 // Insert the recipe summary corresponding to the url into the database
-func (dbctx *DbContext) Insert(ctx context.Context, url string, summary string, user User) error {
-	_, err := dbctx.db.ExecContext(ctx,
+func (repo *Repo) Insert(ctx context.Context, url string, summary string, user User) error {
+	_, err := repo.db.ExecContext(ctx,
 		"INSERT INTO recipes (url, summary, user, lastAccess, hitCount) VALUES (?, json(?), ?, datetime('now'), 0)",
 		url, summary, user)
 	return err
 }
 
 // Search for recipes matching a pattern
-func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList, error) {
+func (repo *Repo) Search(ctx context.Context, pattern string) (recipeList, error) {
 	if pattern == "" {
 		return nil, nil
 	}
@@ -140,7 +128,7 @@ func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList,
 	if unicode.IsLetter(lastRune) {
 		pattern += "*"
 	}
-	rows, err := dbctx.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
+	rows, err := repo.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -158,15 +146,15 @@ func (dbctx *DbContext) Search(ctx context.Context, pattern string) (recipeList,
 	return result, nil
 }
 
-func (dbctx *DbContext) Usage(ctx context.Context, usage Usage) error {
-	_, err := dbctx.db.ExecContext(ctx,
+func (repo *Repo) Usage(ctx context.Context, usage Usage) error {
+	_, err := repo.db.ExecContext(ctx,
 		"INSERT INTO usage (url, lengthIn, lengthOut, tokensIn, tokensOut) VALUES (?, ?, ?, ?, ?)",
 		usage.Url, usage.LengthIn, usage.LengthOut, usage.TokensIn, usage.TokensOut)
 	return err
 }
 
-func (dbctx *DbContext) GetSession(ctx context.Context, email string) string {
-	row := dbctx.db.QueryRowContext(ctx, "SELECT nonce FROM session WHERE email = ?", email)
+func (repo *Repo) GetSession(ctx context.Context, email string) string {
+	row := repo.db.QueryRowContext(ctx, "SELECT nonce FROM session WHERE email = ?", email)
 	var nonce string
 	_ = row.Scan(&nonce)
 	return nonce

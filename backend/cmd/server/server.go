@@ -30,7 +30,7 @@ func main() {
 
 	summarizer := newSummarizer(llm, *theModel)
 
-	db, err := NewDb(spec.DbFile)
+	db, err := NewRepo(spec.DbFile)
 	if err != nil {
 		log.Fatal("error initializing database interface:", err)
 	}

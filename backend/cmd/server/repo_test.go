@@ -9,8 +9,8 @@ import (
 
 const testUser = User("test@example.com")
 
-func setupTest(t *testing.T) *DbContext {
-	db, err := NewTestDb()
+func setupTest(t *testing.T) Repo {
+	db, err := NewTestRepo()
 	assert.NilError(t, err)
 	t.Cleanup(db.Close)
 	return db
