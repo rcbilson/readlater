@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rcbilson/recipe/llm"
 	"gotest.tools/assert"
-	"knilson.org/recipe/llm"
 )
 
 var urls = [...]string{

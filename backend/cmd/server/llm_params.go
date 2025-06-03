@@ -1,6 +1,6 @@
 package main
 
-import "knilson.org/recipe/llm"
+import "github.com/rcbilson/recipe/llm"
 
 type LlmParams struct {
 	llm.Params

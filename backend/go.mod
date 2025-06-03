@@ -1,4 +1,4 @@
-module knilson.org/recipe
+module github.com/rcbilson/recipe
 
 go 1.24.3
 

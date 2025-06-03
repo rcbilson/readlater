@@ -7,7 +7,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"knilson.org/recipe/sqlite"
+	"github.com/rcbilson/recipe/sqlite"
 )
 
 type Usage struct {

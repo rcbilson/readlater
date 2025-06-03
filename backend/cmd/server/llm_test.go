@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"knilson.org/recipe/llm"
+	"github.com/rcbilson/recipe/llm"
 )
 
 type recipeJson struct {

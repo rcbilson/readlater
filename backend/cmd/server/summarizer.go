@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"knilson.org/recipe/llm"
+	"github.com/rcbilson/recipe/llm"
 )
 
 type summarizeFunc func(ctx context.Context, recipe []byte, stats *llm.Usage) (string, error)

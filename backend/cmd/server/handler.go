@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strconv"
 
-	"knilson.org/recipe/llm"
-	"knilson.org/recipe/www"
+	"github.com/rcbilson/recipe/llm"
+	"github.com/rcbilson/recipe/www"
 )
 
 type recipeEntry struct {

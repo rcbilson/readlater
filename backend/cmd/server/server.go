@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
-	"knilson.org/recipe/llm"
-	"knilson.org/recipe/www"
+	"github.com/rcbilson/recipe/llm"
+	"github.com/rcbilson/recipe/www"
 )
 
 type specification struct {
