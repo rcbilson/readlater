@@ -6,6 +6,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"knilson.org/recipe/llm"
+	"knilson.org/recipe/www"
 )
 
 type specification struct {
@@ -36,5 +37,5 @@ func main() {
 	}
 	defer db.Close()
 
-	handler(summarizer, db, fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
+	handler(summarizer, db, www.Fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
 }

@@ -15,6 +15,11 @@ import (
 	"knilson.org/recipe/llm"
 )
 
+var urls = [...]string{
+	"https://www.allrecipes.com/recipe/220943/chef-johns-buttermilk-biscuits",
+	"https://www.seriouseats.com/classic-banana-bread-recipe",
+}
+
 func mockFetcher(_ context.Context, url string) ([]byte, error) {
 	return []byte("html for " + url), nil
 }

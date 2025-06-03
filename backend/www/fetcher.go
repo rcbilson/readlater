@@ -1,4 +1,4 @@
-package main
+package www
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 	"net/http"
 )
 
-type fetcherFunc func(ctx context.Context, url string) ([]byte, error)
+type FetcherFunc func(ctx context.Context, url string) ([]byte, error)
 
-func fetcher(ctx context.Context, url string) ([]byte, error) {
+func Fetcher(ctx context.Context, url string) ([]byte, error) {
 	var httpClient http.Client
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

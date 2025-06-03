@@ -1,4 +1,4 @@
-package main
+package www
 
 import (
 	"context"
@@ -25,7 +25,7 @@ func TestFetch(t *testing.T) {
 	}
 
 	for _, url := range urls {
-		bytes, err := fetcher(context.Background(), url)
+		bytes, err := Fetcher(context.Background(), url)
 		if err != nil {
 			t.Errorf("Failed to fetch %s", url)
 		}
@@ -45,7 +45,7 @@ func TestFetch(t *testing.T) {
 		}
 	}
 
-	_, err := fetcher(context.Background(), "not a valid url")
+	_, err := Fetcher(context.Background(), "not a valid url")
 	if err == nil {
 		t.Error("Failed to return error for invalid url")
 	}

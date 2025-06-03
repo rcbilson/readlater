@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"knilson.org/recipe/llm"
+	"knilson.org/recipe/www"
 )
 
 type recipeEntry struct {
@@ -33,7 +34,7 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(summarizer summarizeFunc, db Repo, fetcher fetcherFunc, port int, frontendPath string, gClientId string) {
+func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port int, frontendPath string, gClientId string) {
 	mux := http.NewServeMux()
 	authHandler := requireAuth(db, gClientId)
 	// Handle the api routes in the backend
@@ -198,7 +199,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 	}
 }
 
-func summarize(summarizer summarizeFunc, db Repo, fetcher fetcherFunc) AuthHandlerFunc {
+func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
 		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
