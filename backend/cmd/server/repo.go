@@ -3,11 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/rcbilson/recipe/sqlite"
+	"github.com/rcbilson/readlater/sqlite"
 )
 
 type Usage struct {
@@ -44,42 +43,38 @@ func (ctx *Repo) Close() {
 	ctx.db.Close()
 }
 
-// Returns a recipe summary if one exists in the database
-func (repo *Repo) Hit(ctx context.Context, url string) error {
-	_, err := repo.db.Exec("UPDATE recipes SET hitCount = hitCount + 1 WHERE url = ?", url)
-	return err
-}
-
-// Returns a recipe summary if one exists in the database
+// Returns a article contents if one exists in the database
 func (repo *Repo) Get(ctx context.Context, url string) (string, bool) {
-	row := repo.db.QueryRowContext(ctx, "SELECT summary FROM recipes WHERE url = ?", url)
-	var summary string
-	err := row.Scan(&summary)
+	row := repo.db.QueryRowContext(ctx, "SELECT contents FROM articles WHERE url = ?", url)
+	var contents string
+	err := row.Scan(&contents)
 	if err != nil {
 		return "", false
 	}
-	_, _ = repo.db.Exec("UPDATE recipes SET lastAccess = datetime('now') WHERE url = ?", url)
-	return summary, true
+	_, _ = repo.db.Exec("UPDATE articles SET lastAccess = datetime('now') WHERE url = ?", url)
+	return contents, true
 }
 
 const listQuery = `
-		SELECT summary ->> '$.title', url,
-			   (summary ->> '$.ingredients' IS NOT NULL) AND (summary ->> '$.method' IS NOT NULL)
-		FROM recipes WHERE summary != '""' ORDER BY %s DESC LIMIT ?;`
+		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
+		FROM articles WHERE contents != '""' ORDER BY %s DESC LIMIT ?;`
 
-// Returns the most recently-accessed recipes
-func (repo *Repo) Recents(ctx context.Context, count int) (recipeList, error) {
-	query := fmt.Sprintf(listQuery, "lastAccess")
+// Returns the most recently-accessed articles
+func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
+	query := `
+		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
+		FROM articles WHERE contents != '""' AND NOT archived
+		ORDER BY lastAccess DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result recipeList
+	var result articleList
 
 	for rows.Next() {
-		var r recipeEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasSummary)
+		var r articleEntry
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody)
 		if err != nil {
 			return nil, err
 		}
@@ -88,19 +83,22 @@ func (repo *Repo) Recents(ctx context.Context, count int) (recipeList, error) {
 	return result, nil
 }
 
-// Returns the most frequently-accessed recipes
-func (repo *Repo) Favorites(ctx context.Context, count int) (recipeList, error) {
-	query := fmt.Sprintf(listQuery, "hitCount")
+// Returns the most frequently-accessed articles
+func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
+	query := `
+		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
+		FROM articles WHERE contents != '""' 
+		ORDER BY created DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result recipeList
+	var result articleList
 
 	for rows.Next() {
-		var r recipeEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasSummary)
+		var r articleEntry
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody)
 		if err != nil {
 			return nil, err
 		}
@@ -109,16 +107,24 @@ func (repo *Repo) Favorites(ctx context.Context, count int) (recipeList, error) 
 	return result, nil
 }
 
-// Insert the recipe summary corresponding to the url into the database
-func (repo *Repo) Insert(ctx context.Context, url string, summary string, user User) error {
+// Insert the article contents corresponding to the url into the database
+func (repo *Repo) Insert(ctx context.Context, url string, contents string, user User) error {
 	_, err := repo.db.ExecContext(ctx,
-		"INSERT INTO recipes (url, summary, user, lastAccess, hitCount) VALUES (?, json(?), ?, datetime('now'), 0)",
-		url, summary, user)
+		"INSERT INTO articles (url, contents) VALUES (?, json(?))",
+		url, contents, user)
 	return err
 }
 
-// Search for recipes matching a pattern
-func (repo *Repo) Search(ctx context.Context, pattern string) (recipeList, error) {
+// Insert the article contents corresponding to the url into the database
+func (repo *Repo) SetArchive(ctx context.Context, url string, archive bool) error {
+	_, err := repo.db.ExecContext(ctx,
+		"UPDATE articles SET archived = ? WHERE url = ?",
+		archive, url)
+	return err
+}
+
+// Search for articles matching a pattern
+func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, error) {
 	if pattern == "" {
 		return nil, nil
 	}
@@ -128,15 +134,15 @@ func (repo *Repo) Search(ctx context.Context, pattern string) (recipeList, error
 	if unicode.IsLetter(lastRune) {
 		pattern += "*"
 	}
-	rows, err := repo.db.QueryContext(ctx, "SELECT summary ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
+	rows, err := repo.db.QueryContext(ctx, "SELECT contents ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var result recipeList
+	var result articleList
 
 	for rows.Next() {
-		var r recipeEntry
+		var r articleEntry
 		err := rows.Scan(&r.Title, &r.Url)
 		if err != nil {
 			return nil, err
@@ -151,11 +157,4 @@ func (repo *Repo) Usage(ctx context.Context, usage Usage) error {
 		"INSERT INTO usage (url, lengthIn, lengthOut, tokensIn, tokensOut) VALUES (?, ?, ?, ?, ?)",
 		usage.Url, usage.LengthIn, usage.LengthOut, usage.TokensIn, usage.TokensOut)
 	return err
-}
-
-func (repo *Repo) GetSession(ctx context.Context, email string) string {
-	row := repo.db.QueryRowContext(ctx, "SELECT nonce FROM session WHERE email = ?", email)
-	var nonce string
-	_ = row.Scan(&nonce)
-	return nonce
 }

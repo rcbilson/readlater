@@ -8,22 +8,21 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/rcbilson/recipe/llm"
-	"github.com/rcbilson/recipe/www"
+	"github.com/rcbilson/readlater/llm"
+	"github.com/rcbilson/readlater/www"
 )
 
-type recipeEntry struct {
-	Title      string `json:"title"`
-	Url        string `json:"url"`
-	HasSummary bool   `json:"hasSummary"`
+type articleEntry struct {
+	Title   string `json:"title"`
+	Url     string `json:"url"`
+	HasBody bool   `json:"hasSummary"`
 }
 
-type recipeList []recipeEntry
+type articleList []articleEntry
 
-type recipe struct {
-	Title       string   `json:"title"`
-	Ingredients []string `json:"ingredients"`
-	Method      []string `json:"method"`
+type article struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 type httpError struct {
@@ -31,13 +30,13 @@ type httpError struct {
 	Code    int    `json:"code"`
 }
 
-func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port int, frontendPath string, gClientId string) {
+func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port int, frontendPath string, _ string) {
 	mux := http.NewServeMux()
-	authHandler := requireAuth(db, gClientId)
+	authHandler := noAuth()
 	// Handle the api routes in the backend
 	mux.Handle("POST /api/summarize", authHandler(summarize(summarizer, db, fetcher)))
 	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
-	mux.Handle("GET /api/favorites", authHandler(fetchFavorites(db)))
+	mux.Handle("GET /api/archive", authHandler(fetchArchive(db)))
 	mux.Handle("GET /api/search", authHandler(search(db)))
 	// bundled assets and static resources
 	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
@@ -64,7 +63,7 @@ func search(db Repo) AuthHandlerFunc {
 		}
 		list, err := db.Search(r.Context(), query[0])
 		if err != nil {
-			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusInternalServerError)
+			logError(w, fmt.Sprintf("Error fetching recent articles: %v", err), http.StatusInternalServerError)
 			return
 		}
 		json.NewEncoder(w).Encode(list)
@@ -86,7 +85,7 @@ func fetchRecents(db Repo) AuthHandlerFunc {
 		}
 		recentList, err := db.Recents(r.Context(), count)
 		if err != nil {
-			logError(w, fmt.Sprintf("Error fetching recent recipes: %v", err), http.StatusInternalServerError)
+			logError(w, fmt.Sprintf("Error fetching recent articles: %v", err), http.StatusInternalServerError)
 			return
 		}
 		json.NewEncoder(w).Encode(recentList)
@@ -94,7 +93,33 @@ func fetchRecents(db Repo) AuthHandlerFunc {
 	}
 }
 
-func fetchFavorites(db Repo) AuthHandlerFunc {
+func setArchive(db Repo) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
+		var err error
+		archived := false
+		archiveStr, ok := r.URL.Query()["setArchive"]
+		if ok {
+			if archiveStr[0] == "true" {
+				archived = true
+			}
+		}
+		var url string
+		urls, ok := r.URL.Query()["url"]
+		if ok {
+			url = urls[0]
+		} else {
+			logError(w, "No URL provided", http.StatusBadRequest)
+			return
+		}
+		err = db.SetArchive(r.Context(), url, archived)
+		if err != nil {
+			logError(w, fmt.Sprintf("Error setting archive status: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func fetchArchive(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
 		count := 5
@@ -106,9 +131,9 @@ func fetchFavorites(db Repo) AuthHandlerFunc {
 				return
 			}
 		}
-		recentList, err := db.Favorites(r.Context(), count)
+		recentList, err := db.Archive(r.Context(), count)
 		if err != nil {
-			logError(w, fmt.Sprintf("Error fetching favorite recipes: %v", err), http.StatusInternalServerError)
+			logError(w, fmt.Sprintf("Error fetching favorite articles: %v", err), http.StatusInternalServerError)
 			return
 		}
 		json.NewEncoder(w).Encode(recentList)
@@ -116,23 +141,8 @@ func fetchFavorites(db Repo) AuthHandlerFunc {
 	}
 }
 
-func hit(db Repo) AuthHandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, _ User) {
-		url, ok := r.URL.Query()["url"]
-		if !ok {
-			logError(w, "No search terms provided", http.StatusBadRequest)
-			return
-		}
-		err := db.Hit(r.Context(), url[0])
-		if err != nil {
-			logError(w, fmt.Sprintf("Error updating database: %v", err), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func validateRecipe(js *string, html []byte, urlString string, titleHint string) {
-	var r recipe
+func validateArticle(js *string, html []byte, urlString string, titleHint string) {
+	var r article
 	err := json.Unmarshal([]byte(*js), &r)
 	if err == nil && r.Title != "" {
 		// Good enough!
@@ -167,7 +177,7 @@ func validateRecipe(js *string, html []byte, urlString string, titleHint string)
 func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		//w.Header().Set("Content-Type", "application/json")
-		//fmt.Fprint(w, `{"title":"a dummy recipe", "ingredients":[], "method":[]}`)
+		//fmt.Fprint(w, `{"title":"a dummy article", "ingredients":[], "method":[]}`)
 		//return
 		ctx := r.Context()
 
@@ -188,23 +198,23 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 		}
 		summary, ok := db.Get(ctx, req.Url)
 		if !ok {
-			log.Println("fetching recipe", req.Url)
+			log.Println("fetching article", req.Url)
 			doUpdate = true
-			recipe, err := fetcher(ctx, req.Url)
+			article, err := fetcher(ctx, req.Url)
 			if err != nil {
-				logError(w, fmt.Sprintf("Error retrieving recipe: %v", err), http.StatusBadRequest)
+				logError(w, fmt.Sprintf("Error retrieving article: %v", err), http.StatusBadRequest)
 			} else {
 				var stats llm.Usage
-				summary, err = summarizer(ctx, recipe, &stats)
+				summary, err = summarizer(ctx, article, &stats)
 				if err != nil {
 					logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
 				}
-				err = db.Usage(ctx, Usage{req.Url, len(recipe), len(summary), stats.InputTokens, stats.OutputTokens})
+				err = db.Usage(ctx, Usage{req.Url, len(article), len(summary), stats.InputTokens, stats.OutputTokens})
 				if err != nil {
 					log.Printf("Error updating usage: %v", err)
 				}
 			}
-			validateRecipe(&summary, recipe, req.Url, req.TitleHint)
+			validateArticle(&summary, article, req.Url, req.TitleHint)
 		}
 		if doUpdate {
 			err = db.Insert(ctx, req.Url, summary, user)

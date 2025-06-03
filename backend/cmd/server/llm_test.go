@@ -9,16 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rcbilson/recipe/llm"
+	"github.com/rcbilson/readlater/llm"
 )
 
-type recipeJson struct {
-	Title       string   `json:"title"`
-	Ingredients []string `json:"ingredients"`
-	Method      []string `json:"method"`
-}
-
-func TestRecipes(t *testing.T) {
+func TestArticles(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -44,12 +38,12 @@ func TestRecipes(t *testing.T) {
 			t.Errorf("%s: error reading file: %v", file, err)
 			continue
 		}
-		summary, err := summarizer(context.Background(), bytes, nil)
+		contents, err := summarizer(context.Background(), bytes, nil)
 		if err != nil {
 			t.Errorf("%s: error communicating with llm: %v", file, err)
 			continue
 		}
-		// save summary for possible analysis
+		// save contents for possible analysis
 		path := strings.TrimSuffix(file, ".html") + ".json"
 		output, err := os.Create(path)
 		if err != nil {
@@ -57,13 +51,13 @@ func TestRecipes(t *testing.T) {
 		}
 		defer output.Close()
 
-		_, err = output.Write([]byte(summary))
+		_, err = output.Write([]byte(contents))
 		if err != nil {
-			t.Errorf("%s: error writing summary output: %v", file, err)
+			t.Errorf("%s: error writing contents output: %v", file, err)
 		}
 
-		var r recipeJson
-		err = json.Unmarshal([]byte(summary), &r)
+		var r article
+		err = json.Unmarshal([]byte(contents), &r)
 		if err != nil {
 			t.Errorf("%s: JSON decode error: %v", file, err)
 			return

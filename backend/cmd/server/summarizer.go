@@ -3,17 +3,17 @@ package main
 import (
 	"context"
 
-	"github.com/rcbilson/recipe/llm"
+	"github.com/rcbilson/readlater/llm"
 )
 
-type summarizeFunc func(ctx context.Context, recipe []byte, stats *llm.Usage) (string, error)
+type summarizeFunc func(ctx context.Context, article []byte, stats *llm.Usage) (string, error)
 
 func newSummarizer(llmClient llm.Llm, params LlmParams) summarizeFunc {
-	return func(ctx context.Context, recipe []byte, stats *llm.Usage) (string, error) {
+	return func(ctx context.Context, article []byte, stats *llm.Usage) (string, error) {
 		cb := llmClient.NewConversationBuilder().
 			AddMessage(llm.RoleUser).
 			AddText(params.Prompt).
-			AddDocument(llm.FormatHtml, "recipe", recipe).
+			AddDocument(llm.FormatHtml, "article", article).
 			AddMessage(llm.RoleAssistant).
 			AddText(params.Prefill)
 

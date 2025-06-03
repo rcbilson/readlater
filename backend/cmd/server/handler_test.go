@@ -11,13 +11,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rcbilson/recipe/llm"
+	"github.com/rcbilson/readlater/llm"
 	"gotest.tools/assert"
 )
 
 var urls = [...]string{
 	"https://www.allrecipes.com/recipe/220943/chef-johns-buttermilk-biscuits",
 	"https://www.seriouseats.com/classic-banana-bread-recipe",
+	"https://knilson.org",
 }
 
 func mockFetcher(_ context.Context, url string) ([]byte, error) {
@@ -95,12 +96,17 @@ func searchTest(t *testing.T, db Repo, pattern string, expCount int) {
 	assert.Equal(t, expCount, len(recipeList))
 }
 
-func hitTest(_ *testing.T, db Repo, urlstr string) {
-	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/hit?url=%s", url.QueryEscape(urlstr)), nil)
+func setArchiveTest(t *testing.T, db Repo, url string, archived bool) {
+	archivedStr := "false"
+	if archived {
+		archivedStr = "true"
+	}
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/setArchive?url=%s&setArchive=%s", url, archivedStr), nil)
 	w := httptest.NewRecorder()
-	hit(db)(w, req, User("test@example.com"))
+	setArchive(db)(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 // TODO: test something other than the happy path
@@ -117,26 +123,21 @@ func TestHandlers(t *testing.T) {
 	// set up a second summary in the db
 	summarizeTest(t, db, urls[1])
 
+	// set up a third summary in the db, but archive it
+	summarizeTest(t, db, urls[2])
+	setArchiveTest(t, db, urls[2], true)
+
 	// ask for five recents, expect two
 	listTest(t, fetchRecents(db), "recent", 5, 2, nil)
 
 	// ask for one recent, expect one
 	listTest(t, fetchRecents(db), "recent", 1, 1, nil)
 
-	// ask for one favorite, expect one
-	listTest(t, fetchFavorites(db), "favorite", 1, 1, nil)
+	// ask for one archived, expect one
+	listTest(t, fetchArchive(db), "archive", 1, 1, nil)
 
-	// ask for five favorites, expect two
-	var resultList recipeListStruct
-	listTest(t, fetchFavorites(db), "favorite", 5, 2, &resultList)
-
-	// hit whichever was reported second
-	hitTest(t, db, resultList[1].Url)
-
-	// ask for the favorites after the hit, second should now be first
-	var newResultList recipeListStruct
-	listTest(t, fetchFavorites(db), "favorite", 2, 2, &newResultList)
-	assert.Equal(t, resultList[1].Title, newResultList[0].Title)
+	// ask for five archived, expect three
+	listTest(t, fetchArchive(db), "archive", 5, 3, nil)
 
 	// should have one search hit
 	searchTest(t, db, "buttermilk", 1)
@@ -144,8 +145,8 @@ func TestHandlers(t *testing.T) {
 	// prefix should be allowed
 	searchTest(t, db, "buttermil", 1)
 
-	// should have two search hits
-	searchTest(t, db, "http", 2)
+	// should have three search hits
+	searchTest(t, db, "http", 3)
 
 	// should have no search hits
 	searchTest(t, db, "foo", 0)
