@@ -8,29 +8,25 @@ type LlmParams struct {
 	Prefill string
 }
 
-var Llama3_8b = LlmParams{
-	Params: llm.Params{
-		Region:  "ca-central-1",
-		ModelID: "meta.llama3-8b-instruct-v1:0",
-	},
-	Prompt: `<|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-The attached html file contains a recipe. Generate a JSON object with the following properties: "title" containing the title of the recipe, "ingredients" containing the ingredients list of the recipe, and "method" containing the steps required to make the recipe. Only output JSON.<|eot_id|><|start_header_id|>assistant<|end_header_id|>`,
-	Prefill: "{",
-}
-
 var Nova_lite = LlmParams{
 	Params: llm.Params{
 		Region:  "us-east-1",
 		ModelID: "us.amazon.nova-lite-v1:0",
 	},
 	Prompt: `Task:
-The attached html file contains a recipe. Generate a JSON object with the following properties: "title" containing the title of the recipe, "ingredients" containing the ingredients list of the recipe, and "method" containing the steps required to make the recipe.
-
-Response style and format requirements:
-- All responses MUST be in JSON format.
-- Only output JSON, do not include any other text in your response.`,
-	Prefill: "{",
+Take the attached article in HTML format and extract the article headings and text, formatting the output as Markdown.
+The output should be a single Markdown document with the article title as the first heading, followed by the headings and text of the article.
+The output should not contain any HTML tags, and should be formatted as follows:
+# Article Title
+## Heading 1
+### Subheading 1.1
+## Heading 2
+### Subheading 2.1
+## Heading 3
+### Subheading 3.1
+The output should not contain any additional text or explanations, only the Markdown formatted article.
+The input will be a single HTML document, and the output should be a single Markdown document.`,
+	Prefill: "# ",
 }
 
 var theModel = &Nova_lite
