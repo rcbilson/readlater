@@ -5,8 +5,8 @@ Richard's quirky read-it-later app.
 ## What is it?
 
 A simple web app that maintains a set of articles to read. You add a URL,
-the server goes off and asks an LLM to summarize the ingredients and steps in
-the readlater and caches that for later use.
+the server goes off and asks an LLM to condense it into a readable form
+ and caches that for later use.
 
 ## Building and running
 
