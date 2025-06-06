@@ -16,8 +16,8 @@ import (
 )
 
 var urls = [...]string{
-	"https://www.allrecipes.com/recipe/220943/chef-johns-buttermilk-biscuits",
-	"https://www.seriouseats.com/classic-banana-bread-recipe",
+	"https://www.allarticles.com/article/220943/chef-johns-buttermilk-biscuits",
+	"https://www.seriouseats.com/classic-banana-bread-article",
 	"https://knilson.org",
 }
 
@@ -30,22 +30,18 @@ type summaryStruct struct {
 	Ingredients []string `json:"ingredients"`
 }
 
-type recipeListEntryStruct struct {
+type articleListEntryStruct struct {
 	Url   string `json:"url"`
 	Title string `json:"title"`
 }
 
-type recipeListStruct []recipeListEntryStruct
+type articleListStruct []articleListEntryStruct
 
-func mockSummarizer(_ context.Context, recipe []byte, stats *llm.Usage) (string, error) {
-	// split the recipe into words and use each word as an ingredient
+func mockSummarizer(_ context.Context, article []byte, stats *llm.Usage) (string, error) {
+	// split the article into words and use each word as an ingredient
 	// this allows us to search for something non-trivial
-	var summary = summaryStruct{
-		Title:       "summary for " + string(recipe),
-		Ingredients: strings.Split(string(recipe), ":/? "),
-	}
-	bytes, err := json.Marshal(summary)
-	return string(bytes), err
+	return "# summary for " + string(article) + "\n" +
+		strings.Join(strings.Split(string(article), ":/? "), " "), nil
 }
 
 func summarizeTest(t *testing.T, db Repo, url string) {
@@ -67,19 +63,19 @@ func summarizeTest(t *testing.T, db Repo, url string) {
 	assert.Equal(t, "summary for html for "+url, summary.Title)
 }
 
-func listTest(t *testing.T, handler AuthHandlerFunc, reqName string, reqCount int, expCount int, resultList *recipeListStruct) {
+func listTest(t *testing.T, handler AuthHandlerFunc, reqName string, reqCount int, expCount int, resultList *articleListStruct) {
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/%s?count=%d", reqName, reqCount), nil)
 	w := httptest.NewRecorder()
 	handler(w, req, User("test@example.com"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
-	var recipeList recipeListStruct
-	err := json.NewDecoder(resp.Body).Decode(&recipeList)
+	var articleList articleListStruct
+	err := json.NewDecoder(resp.Body).Decode(&articleList)
 	assert.NilError(t, err)
-	assert.Equal(t, expCount, len(recipeList))
+	assert.Equal(t, expCount, len(articleList))
 	if resultList != nil {
-		*resultList = recipeList
+		*resultList = articleList
 	}
 }
 
@@ -90,10 +86,10 @@ func searchTest(t *testing.T, db Repo, pattern string, expCount int) {
 	resp := w.Result()
 	defer resp.Body.Close()
 
-	var recipeList recipeListStruct
-	err := json.NewDecoder(resp.Body).Decode(&recipeList)
+	var articleList articleListStruct
+	err := json.NewDecoder(resp.Body).Decode(&articleList)
 	assert.NilError(t, err)
-	assert.Equal(t, expCount, len(recipeList))
+	assert.Equal(t, expCount, len(articleList))
 }
 
 func setArchiveTest(t *testing.T, db Repo, url string, archived bool) {

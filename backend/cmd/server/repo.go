@@ -32,6 +32,7 @@ func NewRepo(dbfile string) (Repo, error) {
 
 func NewTestRepo() (Repo, error) {
 	db, err := sqlite.NewFromMemory(schema)
+	//db, err := sqlite.NewFromFile("/tmp/xxx.db", schema)
 	if err != nil {
 		return Repo{}, err
 	}
@@ -44,26 +45,21 @@ func (ctx *Repo) Close() {
 }
 
 // Returns a article contents if one exists in the database
-func (repo *Repo) Get(ctx context.Context, url string) (string, bool) {
-	row := repo.db.QueryRowContext(ctx, "SELECT contents FROM articles WHERE url = ?", url)
-	var contents string
-	err := row.Scan(&contents)
+func (repo *Repo) Get(ctx context.Context, url string) (*article, bool) {
+	row := repo.db.QueryRowContext(ctx, "SELECT title, contents FROM articles WHERE url = ?", url)
+	art := article{Url: url}
+	err := row.Scan(&art.Title, &art.Contents)
 	if err != nil {
-		return "", false
+		return &art, false
 	}
-	_, _ = repo.db.Exec("UPDATE articles SET lastAccess = datetime('now') WHERE url = ?", url)
-	return contents, true
+	_, _ = repo.db.Exec("UPDATE articles SET unread = false, lastAccess = datetime('now') WHERE url = ?", url)
+	return &art, true
 }
-
-const listQuery = `
-		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
-		FROM articles WHERE contents != '""' ORDER BY %s DESC LIMIT ?;`
 
 // Returns the most recently-accessed articles
 func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
-		FROM articles WHERE contents != '""' AND NOT archived
+		SELECT title, url, (contents IS NOT NULL) FROM articles WHERE NOT archived
 		ORDER BY lastAccess DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -86,8 +82,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 // Returns the most frequently-accessed articles
 func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT contents ->> '$.title', url, (contents ->> '$.body' IS NOT NULL)
-		FROM articles WHERE contents != '""' 
+		SELECT title, url, (contents IS NOT NULL) FROM articles 
 		ORDER BY created DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -108,10 +103,10 @@ func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 }
 
 // Insert the article contents corresponding to the url into the database
-func (repo *Repo) Insert(ctx context.Context, url string, contents string, user User) error {
+func (repo *Repo) Insert(ctx context.Context, art *article) error {
 	_, err := repo.db.ExecContext(ctx,
-		"INSERT INTO articles (url, contents) VALUES (?, json(?))",
-		url, contents, user)
+		"INSERT INTO articles (title, url, contents) VALUES (?, ?, ?)",
+		art.Title, art.Url, art.Contents)
 	return err
 }
 
@@ -134,7 +129,7 @@ func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, erro
 	if unicode.IsLetter(lastRune) {
 		pattern += "*"
 	}
-	rows, err := repo.db.QueryContext(ctx, "SELECT contents ->> '$.title', url FROM fts where fts MATCH ? ORDER BY rank", pattern)
+	rows, err := repo.db.QueryContext(ctx, "SELECT title, url FROM fts where fts MATCH ? ORDER BY rank", pattern)
 	if err != nil {
 		return nil, err
 	}

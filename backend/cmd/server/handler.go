@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 
 	"github.com/rcbilson/readlater/llm"
@@ -21,8 +22,9 @@ type articleEntry struct {
 type articleList []articleEntry
 
 type article struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	Title    string `json:"title"`
+	Url      string `json:"url"`
+	Contents string `json:"contents"`
 }
 
 type httpError struct {
@@ -63,7 +65,7 @@ func search(db Repo) AuthHandlerFunc {
 		}
 		list, err := db.Search(r.Context(), query[0])
 		if err != nil {
-			logError(w, fmt.Sprintf("Error fetching recent articles: %v", err), http.StatusInternalServerError)
+			logError(w, fmt.Sprintf("Error searching articles: %v", err), http.StatusInternalServerError)
 			return
 		}
 		json.NewEncoder(w).Encode(list)
@@ -141,44 +143,36 @@ func fetchArchive(db Repo) AuthHandlerFunc {
 	}
 }
 
-func validateArticle(js *string, html []byte, urlString string, titleHint string) {
-	var r article
-	err := json.Unmarshal([]byte(*js), &r)
-	if err == nil && r.Title != "" {
-		// Good enough!
-		return
+var titleExtractor = regexp.MustCompile(`^# (.*)\n`)
+
+func extractTitle(md *string, html []byte, urlString string, titleHint string) string {
+	matches := titleExtractor.FindStringSubmatch(*md)
+	if matches != nil && len(matches) > 1 {
+		return matches[1]
 	}
 
 	// sometimes the browser gives us the title for nothing
-	r.Title = titleHint
-
-	if r.Title == "" {
-		// Try to extract the title from the HTML
-		r.Title = www.HtmlTitle(html)
+	if titleHint != "" {
+		return titleHint
 	}
 
-	if r.Title == "" {
-		// In desperation, use the URL
-		parsedUrl, err := url.Parse(urlString)
-		if err == nil {
-			r.Title = parsedUrl.Path
-		} else {
-			r.Title = urlString
-		}
+	// Try to extract the title from the HTML
+	title := www.HtmlTitle(html)
+	if title != "" {
+		return title
 	}
 
-	b, err := json.Marshal(r)
+	// In desperation, use the URL
+	parsedUrl, err := url.Parse(urlString)
 	if err == nil {
-		*js = string(b)
-		return
+		return parsedUrl.Path
+	} else {
+		return urlString
 	}
 }
 
 func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
-		//w.Header().Set("Content-Type", "application/json")
-		//fmt.Fprint(w, `{"title":"a dummy article", "ingredients":[], "method":[]}`)
-		//return
 		ctx := r.Context()
 
 		var req struct {
@@ -190,44 +184,37 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			logError(w, fmt.Sprintf("JSON decode error: %v", err), http.StatusBadRequest)
 			return
 		}
-		doUpdate := false
 		_, err = url.Parse(req.Url)
 		if err != nil {
 			logError(w, fmt.Sprintf("Invalid URL: %v", err), http.StatusBadRequest)
 			return
 		}
-		summary, ok := db.Get(ctx, req.Url)
+		article, ok := db.Get(ctx, req.Url)
 		if !ok {
 			log.Println("fetching article", req.Url)
-			doUpdate = true
-			article, err := fetcher(ctx, req.Url)
+			html, err := fetcher(ctx, req.Url)
 			if err != nil {
 				logError(w, fmt.Sprintf("Error retrieving article: %v", err), http.StatusBadRequest)
 			} else {
 				var stats llm.Usage
-				summary, err = summarizer(ctx, article, &stats)
+				article.Contents, err = summarizer(ctx, html, &stats)
 				if err != nil {
 					logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
 				}
-				err = db.Usage(ctx, Usage{req.Url, len(article), len(summary), stats.InputTokens, stats.OutputTokens})
+				err = db.Usage(ctx, Usage{req.Url, len(html), len(article.Contents), stats.InputTokens, stats.OutputTokens})
 				if err != nil {
 					log.Printf("Error updating usage: %v", err)
 				}
 			}
-			validateArticle(&summary, article, req.Url, req.TitleHint)
-		}
-		if doUpdate {
-			err = db.Insert(ctx, req.Url, summary, user)
-			if err != nil && err.Error() == "malformed JSON" {
-				err = db.Insert(ctx, req.Url, `""`, user)
-				summary = ""
-			}
+			article.Title = extractTitle(&article.Contents, html, req.Url, req.TitleHint)
+			article.Url = req.Url
+			err = db.Insert(ctx, article)
 			if err != nil {
 				log.Printf("Error inserting into db: %v", err)
 			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, summary)
+		json.NewEncoder(w).Encode(article)
 	}
 }
