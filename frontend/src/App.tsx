@@ -28,7 +28,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/favorites",
+    path: "/archive",
     element: <MainPage />,
     errorElement: <ErrorPage />,
   },
@@ -43,7 +43,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/show/:recipeUrl",
+    path: "/show/:articleUrl",
     element: <ShowPage />
   },
   {

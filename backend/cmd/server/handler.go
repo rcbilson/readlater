@@ -16,7 +16,7 @@ import (
 type articleEntry struct {
 	Title   string `json:"title"`
 	Url     string `json:"url"`
-	HasBody bool   `json:"hasSummary"`
+	HasBody bool   `json:"hasBody"`
 }
 
 type articleList []articleEntry

@@ -1,10 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { AuthContext } from "@/components/ui/auth-context";
+
+// ArticleRequest is a type consisting of the url of a article to fetch.
+type ArticleRequest = {
+  url: string;
+  titleHint?: string; // optional title hint for the article
+}
 
 // This component acts as a PWA share target. It reads the shared URL from the POSTed form data
 // and redirects to /show... for display.
 export default function ShareTarget() {
   const navigate = useNavigate();
+  const { token } = useContext(AuthContext);
 
   useEffect(() => {
     // Only run on mount
@@ -13,16 +22,16 @@ export default function ShareTarget() {
       const params = new URLSearchParams(window.location.search);
       const url = params.get("text");
       const title = params.get("title");
-      if (url) {
-        let target=`/show/${encodeURIComponent(url)}`
-        if (title) {
-          target=`${target}?titleHint=${encodeURIComponent(title)}`
-        }
-        navigate(target, { replace: true });
-        return;
-      }
+
+      if (!url) return;
+
+      const request: ArticleRequest = { url: url, titleHint: title || undefined };
+      axios.post("/api/summarize", request, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).then(() => navigate("/recent", { replace: true }));
+      return;
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
   return (
     <div style={{ padding: "2em", textAlign: "center" }}>

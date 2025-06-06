@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from '@chakra-ui/react';
 
-import RecipeQuery from "./RecipeQuery.tsx";
+import ArticleQuery from "./ArticleQuery.tsx";
 
 const SearchPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,12 +19,12 @@ const SearchPage: React.FC = () => {
     <div>
       <Input
         id="searchInput"
-        placeholder="Search recipes..."
+        placeholder="Search articles..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         mb={4}
       />
-      {debouncedQuery && <RecipeQuery queryPath={"/api/search?q=" + encodeURIComponent(debouncedQuery)} />}
+      {debouncedQuery && <ArticleQuery queryPath={"/api/search?q=" + encodeURIComponent(debouncedQuery)} />}
     </div>
   );
 };

@@ -36,12 +36,12 @@
   line-height: 1.1;
 }
 
-.recipeEntry {
+.articleEntry {
   padding: 0.5em;
   cursor: pointer;
 }
 
-.recipeEntry .url {
+.articleEntry .url {
   font-size: 0.75em;
 }
 
@@ -49,11 +49,11 @@
   cursor: pointer;
 }
 
-#recipeHeader {
+#articleHeader {
   display: flex;
   flex-direction: row;
 }
 
-#recipeHeader #titleBox {
+#articleHeader #titleBox {
   flex: 1;
 }

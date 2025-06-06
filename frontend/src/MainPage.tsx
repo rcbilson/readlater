@@ -3,7 +3,7 @@ import { Tabs } from '@chakra-ui/react'
 import { LuBookmarkPlus, LuStar, LuClock, LuSearch } from "react-icons/lu"
 import { useLocation, Link } from "react-router-dom"
 
-import FavoritePage from "./FavoritePage"
+import ArchivePage from "./ArchivePage"
 import RecentPage from "./RecentPage"
 import SearchPage from "./SearchPage"
 import AddPage from "./AddPage"
@@ -23,10 +23,10 @@ export default function MainPage() {
                 Recent
               </Link>
             </Tabs.Trigger>
-            <Tabs.Trigger value="favorites">
+            <Tabs.Trigger value="archive">
               <LuStar />
-              <Link to="/favorites">
-                Favorites
+              <Link to="/archive">
+                Archive
               </Link>
             </Tabs.Trigger>
             <Tabs.Trigger value="search">
@@ -42,8 +42,8 @@ export default function MainPage() {
               </Link>
             </Tabs.Trigger>
           </Tabs.List>
-          <Tabs.Content value="favorites">
-            <FavoritePage />
+          <Tabs.Content value="archive">
+            <ArchivePage />
           </Tabs.Content>
           <Tabs.Content value="recent">
             <RecentPage />

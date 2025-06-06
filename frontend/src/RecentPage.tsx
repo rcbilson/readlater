@@ -4,12 +4,12 @@
 // with the recipe contents.
 import React from "react";
 
-import RecipeQuery from "./RecipeQuery.tsx";
+import ArticleQuery from "./ArticleQuery.tsx";
 
 const RecentPage: React.FC = () => {
   return (
     <div id="recentContainer">
-      <RecipeQuery queryPath='/api/recents?count=50' />
+      <ArticleQuery queryPath='/api/recents?count=50' />
     </div>
   );
 };

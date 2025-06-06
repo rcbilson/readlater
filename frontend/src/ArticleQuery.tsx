@@ -1,24 +1,24 @@
-// A react component that has an editable text area for a recipe url
+// A react component that has an editable text area for a article url
 // next to a button with a refresh icon. When the button is clicked,
-// the recipe url is fetched and the text area below the url is updated
-// with the recipe contents.
+// the article url is fetched and the text area below the url is updated
+// with the article contents.
 import React, { useContext } from "react";
 import { useNavigate } from 'react-router-dom';
 import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { AuthContext } from "@/components/ui/auth-context";
 
-type RecipeEntry = {
+type ArticleEntry = {
   title: string;
   url: string;
-  hasSummary: boolean;
+  hasBody: boolean;
 }
 
 interface Props {
   queryPath: string;
 }
 
-const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
+const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const navigate = useNavigate();
   const { token, resetAuth } = useContext(AuthContext);
 
@@ -26,7 +26,7 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
     return async () => {
       try {
         console.log("fetching " + queryPath);
-        const response = await axios.get<Array<RecipeEntry>>(queryPath, {
+        const response = await axios.get<Array<ArticleEntry>>(queryPath, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         return response.data;
@@ -41,18 +41,16 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   };
 
   const {isError, data, error} = useQuery({
-    queryKey: ['recipeList', queryPath],
+    queryKey: ['articleList', queryPath],
     queryFn: fetchQuery(queryPath),
   });
   const recents = data;
 
-  const handleRecipeClick = (entry: RecipeEntry) => {
+  const handleArticleClick = (entry: ArticleEntry) => {
     return () => {
+      console.log(entry);
       const encodedUrl = encodeURIComponent(entry.url);
-      axios.post("/api/hit?url=" + encodedUrl, null, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (entry.hasSummary) {
+      if (entry.hasBody) {
         navigate("/show/" + encodedUrl);
       } else {
         window.open(entry.url, "_blank");
@@ -65,9 +63,9 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   }
 
   return (
-    <div id="recipeList">
+    <div id="articleList">
       {recents && recents.map((recent) =>
-        <div className="recipeEntry" key={recent.url} onClick={handleRecipeClick(recent)}>
+        <div className="articleEntry" key={recent.url} onClick={handleArticleClick(recent)}>
           <div className="title">{recent.title}</div>
           <div className="url">{new URL(recent.url).hostname}</div>
         </div>
@@ -76,4 +74,4 @@ const RecipeQuery: React.FC<Props> = ({queryPath}: Props) => {
   );
 };
 
-export default RecipeQuery;
+export default ArticleQuery;
