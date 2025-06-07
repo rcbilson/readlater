@@ -7,9 +7,11 @@ import { useParams } from 'react-router-dom';
 import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
-import { List } from "@chakra-ui/react"
+import { marked } from 'marked';
 import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
+import DOMPurify from 'isomorphic-dompurify';
+import "./Article.css";
 
 // ArticleRequest is a type consisting of the url of a article to fetch.
 type ArticleRequest = {
@@ -20,24 +22,29 @@ type ArticleRequest = {
 // Article is a type representing an article.
 type Article = {
   title: string;
-  ingredients: string[];
-  method: string[];
+  url: string;
+  contents: string;
 }
 
 const MainPage: React.FC = () => {
   const { articleUrl } = useParams();
   const { token, resetAuth } = useContext(AuthContext);
+  const [debug, setDebug] = useState(false);
+  const [content, setContent] = useState<string>("");
 
   if (!articleUrl) {
     return <div>Oops, no article here!</div>;
   }
  
-  const [debug, setDebug] = useState(false);
+  const formatArticle = async (contents: string) => {
+    const html = await marked(contents);
+    return DOMPurify.sanitize(html);
+  }
 
-  const fetcharticle = async () => {
+  const fetchArticle = async () => {
     try {
       console.log("fetching " + articleUrl);
-      
+
       // if we're coming from the share target we might have a title
       const params = new URLSearchParams(window.location.search);
       const titleHint = params.get("titleHint");
@@ -46,7 +53,10 @@ const MainPage: React.FC = () => {
       const response = await axios.post<Article>("/api/summarize", request, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      return response.data;
+      const article = await response.data;
+      const html = await formatArticle(article.contents);
+      setContent(html);
+      return article;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
         resetAuth();
@@ -58,7 +68,7 @@ const MainPage: React.FC = () => {
 
   const {isPending, isError, data, error} = useQuery({
     queryKey: ['article', articleUrl],
-    queryFn: fetcharticle,
+    queryFn: fetchArticle,
     refetchOnWindowFocus: false,
   });
   const article = data;
@@ -67,7 +77,7 @@ const MainPage: React.FC = () => {
   const checkHotkey = useCallback(
     (event: KeyboardEvent) => {
       if (event.ctrlKey && event.key === "q") {
-	setDebug(!debug);
+        setDebug(!debug);
       }
     },
     [debug],
@@ -83,9 +93,9 @@ const MainPage: React.FC = () => {
 
   useEffect(() => {
     if (article && article.title) {
-      document.title = "articles: " + article.title;
+      document.title = "Read Later: " + article.title;
     } else {
-      document.title = "articles";
+      document.title = "Read Later";
     }
   }, [article]);
   
@@ -103,14 +113,13 @@ const MainPage: React.FC = () => {
   return (
     <div id="articleContainer">
       {isError && <div>An error occurred: {error.message}</div>}
-      {isPending && <div>We're loading a summary of this article, just a moment...</div>}
-      {!isPending && !article && <div>We don't have a summary for {articleLink}. You can see the original by clicking the link.</div>}
-      {debug && article && <pre>{JSON.stringify(article, null, 2)}</pre>}
+      {isPending && <div>We're loading this article, just a moment...</div>}
+      {!isPending && !article && <div>We don't have a version of {articleLink}. You can see the original by clicking the link.</div>}
+      {debug && article && <pre>{article.contents}</pre>}
       {!debug && article && 
         <div>
           <div id="articleHeader">
             <div id="titleBox">
-              <div id="title">{article.title}</div>
               {articleUrl && 
                 <span>
                   <a id="url" href={articleUrl}>{new URL(articleUrl).hostname}</a>
@@ -120,16 +129,7 @@ const MainPage: React.FC = () => {
           </div>
           <ErrorBoundary
               fallback={<div>We weren't able to summarize {articleLink}. You can see the original by clicking the link.</div>}>
-            <div id="method">
-              {article.ingredients &&
-                <List.Root padding="0.5em">{article.ingredients.map((ingredient, id) =>
-                  <List.Item key={id}>{ingredient}</List.Item>)}
-                </List.Root>}
-              {article.method &&
-                <List.Root as="ol" padding="0.5em">{article.method.map((step, id) =>
-                  <List.Item key={id}>{step}</List.Item>)}
-                </List.Root>}
-            </div>
+            <div className="article" dangerouslySetInnerHTML={{ __html: content }} />
           </ErrorBoundary>
         </div>
       }
