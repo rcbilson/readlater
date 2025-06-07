@@ -4,6 +4,7 @@ import { Toaster, toaster } from "@/components/ui/toaster"
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { AuthContext } from "@/components/ui/auth-context";
+import { useQueryClient } from '@tanstack/react-query';
 
 // ArticleRequest is a type consisting of the url of a article to fetch.
 type ArticleRequest = {
@@ -15,6 +16,7 @@ const AddPage: React.FC = () => {
     const [url, setUrl] = useState("");
     const navigate = useNavigate();
     const { token } = useContext(AuthContext);
+    const queryClient = useQueryClient();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +30,7 @@ const AddPage: React.FC = () => {
                 title: "Recipe added successfully!",
                 type: "success",
             });
+            queryClient.invalidateQueries({ queryKey: ['articleList'] })
             navigate("/recent", { replace: true });
         } catch (e) {
             toaster.create({
@@ -46,10 +49,10 @@ const AddPage: React.FC = () => {
                     id="addInput"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Enter recipe URL"
+                    placeholder="Enter article URL"
                     mb={4}
                 />
-                <Button type="submit">Add Recipe</Button>
+                <Button type="submit">Add Article</Button>
             </form>
         </>
     );
