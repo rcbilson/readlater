@@ -35,6 +35,7 @@ const AddPage: React.FC = () => {
         } catch (e) {
             toaster.create({
                 title: "Invalid URL",
+                description: e instanceof Error ? e.message : undefined,
                 type: "error",
             });
             return;

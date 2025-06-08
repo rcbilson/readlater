@@ -31,10 +31,6 @@ const MainPage: React.FC = () => {
   const { token, resetAuth } = useContext(AuthContext);
   const [debug, setDebug] = useState(false);
   const [content, setContent] = useState<string>("");
-
-  if (!articleUrl) {
-    return <div>Oops, no article here!</div>;
-  }
  
   const formatArticle = async (contents: string) => {
     const html = await marked(contents);
@@ -43,6 +39,10 @@ const MainPage: React.FC = () => {
 
   const fetchArticle = async () => {
     try {
+      if (!articleUrl) {
+        throw new Error("no article to fetch");
+      }
+
       console.log("fetching " + articleUrl);
 
       // if we're coming from the share target we might have a title

@@ -36,7 +36,7 @@ export default function ShareTarget() {
       });
       return;
     }
-  }, [navigate, token]);
+  }, [navigate, token, queryClient]);
 
   return (
     <div style={{ padding: "2em", textAlign: "center" }}>
