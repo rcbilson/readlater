@@ -11,20 +11,8 @@ import { marked } from 'marked';
 import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
+import { Article, ArticleRequest } from './Article';
 import "./Article.css";
-
-// ArticleRequest is a type consisting of the url of a article to fetch.
-type ArticleRequest = {
-  url: string;
-  titleHint?: string; // optional title hint for the article
-}
-
-// Article is a type representing an article.
-type Article = {
-  title: string;
-  url: string;
-  contents: string;
-}
 
 const MainPage: React.FC = () => {
   const { articleUrl } = useParams();

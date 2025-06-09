@@ -5,12 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { AuthContext } from "@/components/ui/auth-context";
 import { useQueryClient } from '@tanstack/react-query';
-
-// ArticleRequest is a type consisting of the url of a article to fetch.
-type ArticleRequest = {
-  url: string;
-  titleHint?: string; // optional title hint for the article
-}
+import { ArticleRequest } from './Article';
 
 const AddPage: React.FC = () => {
     const [url, setUrl] = useState("");
