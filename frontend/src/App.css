@@ -32,6 +32,10 @@
   font-size: 0.75em;
 }
 
+.articleEntry.unread {
+  font-weight: bold;
+}
+
 .textclick {
   cursor: pointer;
 }

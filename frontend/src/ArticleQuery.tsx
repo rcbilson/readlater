@@ -12,6 +12,7 @@ type ArticleEntry = {
   title: string;
   url: string;
   hasBody: boolean;
+  unread: boolean;
 }
 
 interface Props {
@@ -65,7 +66,7 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   return (
     <div id="articleList">
       {recents && recents.map((recent) =>
-        <div className="articleEntry" key={recent.url} onClick={handleArticleClick(recent)}>
+        <div className={`articleEntry ${recent.unread ? 'unread' : ''}`} key={recent.url} onClick={handleArticleClick(recent)}>
           <div className="title">{recent.title}</div>
           <div className="url">{new URL(recent.url).hostname}</div>
         </div>

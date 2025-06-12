@@ -17,6 +17,7 @@ type articleEntry struct {
 	Title   string `json:"title"`
 	Url     string `json:"url"`
 	HasBody bool   `json:"hasBody"`
+	Unread  bool   `json:"unread"`
 }
 
 type articleList []articleEntry

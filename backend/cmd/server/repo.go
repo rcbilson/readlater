@@ -59,7 +59,7 @@ func (repo *Repo) Get(ctx context.Context, url string) (*article, bool) {
 // Returns the most recently-accessed articles
 func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL) FROM articles WHERE NOT archived
+		SELECT title, url, (contents IS NOT NULL), unread FROM articles WHERE NOT archived
 		ORDER BY lastAccess DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -70,7 +70,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasBody)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 // Returns the most frequently-accessed articles
 func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL) FROM articles 
+		SELECT title, url, (contents IS NOT NULL), unread FROM articles 
 		ORDER BY created DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -93,7 +93,7 @@ func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasBody)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,7 @@ func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, erro
 	if unicode.IsLetter(lastRune) {
 		pattern += "*"
 	}
-	rows, err := repo.db.QueryContext(ctx, "SELECT title, url FROM fts where fts MATCH ? ORDER BY rank", pattern)
+	rows, err := repo.db.QueryContext(ctx, "SELECT a.title, a.url, (a.contents IS NOT NULL), a.unread FROM fts INNER JOIN articles a ON fts.url = a.url WHERE fts MATCH ? ORDER BY rank", pattern)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, erro
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread)
 		if err != nil {
 			return nil, err
 		}
