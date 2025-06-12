@@ -14,10 +14,11 @@ import (
 )
 
 type articleEntry struct {
-	Title   string `json:"title"`
-	Url     string `json:"url"`
-	HasBody bool   `json:"hasBody"`
-	Unread  bool   `json:"unread"`
+	Title    string `json:"title"`
+	Url      string `json:"url"`
+	HasBody  bool   `json:"hasBody"`
+	Unread   bool   `json:"unread"`
+	Archived bool   `json:"archived"`
 }
 
 type articleList []articleEntry
@@ -41,6 +42,7 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
 	mux.Handle("GET /api/archive", authHandler(fetchArchive(db)))
 	mux.Handle("GET /api/search", authHandler(search(db)))
+	mux.Handle("PUT /api/setArchive", authHandler(setArchive(db)))
 	// bundled assets and static resources
 	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
 	mux.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))

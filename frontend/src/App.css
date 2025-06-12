@@ -26,6 +26,9 @@
 .articleEntry {
   padding: 0.5em;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .articleEntry .url {
@@ -34,6 +37,25 @@
 
 .articleEntry.unread {
   font-weight: bold;
+}
+
+.articleContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.archiveButton {
+  padding: 0.25em;
+  margin-left: 0.5em;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.archiveButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .textclick {
