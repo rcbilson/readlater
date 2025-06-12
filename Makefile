@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-SERVICE=recipe
+SERVICE=readlater
 
 .PHONY: up
 up: docker
