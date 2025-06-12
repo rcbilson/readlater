@@ -1,16 +1,10 @@
-import { useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { AuthContext } from "@/components/ui/auth-context";
-import { useQueryClient } from '@tanstack/react-query';
-import { ArticleRequest } from './Article';
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster"
+import { useDoAdd } from "./useDoAdd"
 
-// This component acts as a PWA share target. It reads the shared URL from the POSTed form data
-// and redirects to /show... for display.
+// This component acts as a PWA share target. It reads the shared URL from the POSTed form data.
 export default function ShareTarget() {
-  const navigate = useNavigate();
-  const { token } = useContext(AuthContext);
-  const queryClient = useQueryClient();
+  const doAdd = useDoAdd();
 
   useEffect(() => {
     // Only run on mount
@@ -22,22 +16,19 @@ export default function ShareTarget() {
 
       if (!url) return;
 
-      const request: ArticleRequest = { url: url, titleHint: title || undefined };
-      axios.post("/api/summarize", request, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['articleList'] })
-        navigate("/recent", { replace: true })
-      });
+      doAdd(url, title ?? undefined);
       return;
     }
-  }, [navigate, token, queryClient]);
+  }, [doAdd]);
 
   return (
-    <div style={{ padding: "2em", textAlign: "center" }}>
-      <h2>Processing shared link…</h2>
-      <p>If this message doesn't go away, show it to Richard.</p>
-      <p>The url received was {window.location.href}</p>
-    </div>
+    <>
+      <Toaster />
+      <div style={{ padding: "2em", textAlign: "center" }}>
+        <h2>Processing shared link…</h2>
+        <p>If this message doesn't go away, show it to Richard.</p>
+        <p>The url received was {window.location.href}</p>
+      </div>
+    </>
   );
 }
