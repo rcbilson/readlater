@@ -22,6 +22,23 @@ const (
 	FormatHtml = ContentFormat(types.DocumentFormatHtml)
 )
 
+type StopReason string
+
+const (
+	StopReasonEndTurn             = StopReason(types.StopReasonEndTurn)
+	StopReasonToolUse             = StopReason(types.StopReasonToolUse)
+	StopReasonMaxTokens           = StopReason(types.StopReasonMaxTokens)
+	StopReasonStopSequence        = StopReason(types.StopReasonStopSequence)
+	StopReasonGuardrailIntervened = StopReason(types.StopReasonGuardrailIntervened)
+	StopReasonContentFiltered     = StopReason(types.StopReasonContentFiltered)
+)
+
+type Response struct {
+	StopReason StopReason
+	Usage      Usage
+	Output     string
+}
+
 type ConversationBuilder struct {
 	input bedrockruntime.ConverseInput
 	err   error
@@ -76,15 +93,34 @@ func (llm *Context) Converse(ctx context.Context, cb *ConversationBuilder, stats
 		return "", cb.err
 	}
 
-	output, err := llm.client.Converse(ctx, &cb.input)
+	response, err := llm.ConverseResponse(ctx, cb)
 	if err != nil {
 		return "", err
 	}
 
 	if stats != nil {
-		stats.InputTokens = int(*output.Usage.InputTokens)
-		stats.OutputTokens = int(*output.Usage.OutputTokens)
+		*stats = response.Usage
 	}
+
+	return response.Output, nil
+}
+
+func (llm *Context) ConverseResponse(ctx context.Context, cb *ConversationBuilder) (Response, error) {
+	var response Response
+
+	if cb.err != nil {
+		return response, cb.err
+	}
+
+	output, err := llm.client.Converse(ctx, &cb.input)
+	if err != nil {
+		return response, err
+	}
+
+	response.Usage.InputTokens = int(*output.Usage.InputTokens)
+	response.Usage.OutputTokens = int(*output.Usage.OutputTokens)
+
+	response.StopReason = StopReason(output.StopReason)
 
 	switch v := output.Output.(type) {
 	case *types.ConverseOutputMemberMessage:
@@ -98,13 +134,14 @@ func (llm *Context) Converse(ctx context.Context, cb *ConversationBuilder, stats
 
 			}
 		}
-		return ret, nil
+		response.Output = ret
+		return response, nil
 
 	case *types.UnknownUnionMember:
-		return "", fmt.Errorf("unknown tag: %v", v.Tag)
+		return response, fmt.Errorf("unknown tag: %v", v.Tag)
 
 	default:
-		return "", errors.New("union is nil or unknown type")
+		return response, errors.New("union is nil or unknown type")
 
 	}
 }

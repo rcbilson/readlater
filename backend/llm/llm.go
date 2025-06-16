@@ -11,6 +11,7 @@ import (
 type Llm interface {
 	NewConversationBuilder() *ConversationBuilder
 	Converse(ctx context.Context, cb *ConversationBuilder, stats *Usage) (string, error)
+	ConverseResponse(ctx context.Context, cb *ConversationBuilder) (Response, error)
 }
 
 type Params struct {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rcbilson/readlater/llm"
 )
@@ -17,10 +18,16 @@ func newSummarizer(llmClient llm.Llm, params LlmParams) summarizeFunc {
 			AddMessage(llm.RoleAssistant).
 			AddText(params.Prefill)
 
-		output, err := llmClient.Converse(ctx, cb, stats)
+		response, err := llmClient.ConverseResponse(ctx, cb)
 		if err != nil {
 			return "", err
 		}
-		return params.Prefill + output, nil
+		if stats != nil {
+			*stats = response.Usage
+		}
+		if response.StopReason != llm.StopReasonEndTurn {
+			err = fmt.Errorf("Unexpected llm stop reason: %s", response.StopReason)
+		}
+		return params.Prefill + response.Output, err
 	}
 }

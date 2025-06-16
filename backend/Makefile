@@ -1,4 +1,4 @@
-GOFLAGS=-tags fts5
+GOFLAGS=--tags=fts5
 
 check:
 	go test ${GOFLAGS} -short ./...

@@ -34,6 +34,7 @@ func TestArticles(t *testing.T) {
 	var urls = []string{
 		"http://bbc.com/future/article/20250528-why-some-countries-dont-fluoridate-their-water?utm_source=pocket_shared",
 		"http://slate.com/life/2025/06/pride-2025-queer-lgbtq-trump-conservative.html?utm_source=pocket_shared",
+		"https://tastecooking.com/is-it-soft-tofus-time/",
 	}
 
 	llm, err := llm.New(context.Background(), theModel.Params)
@@ -63,7 +64,6 @@ func TestArticles(t *testing.T) {
 		contents, err := summarizer(context.Background(), bytes, nil)
 		if err != nil {
 			t.Errorf("%s: error communicating with llm: %v", url, err)
-			continue
 		}
 		// save contents for possible analysis
 		mdPath := strings.TrimSuffix(htmlPath, ".html") + ".md"
