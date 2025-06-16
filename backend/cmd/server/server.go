@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rcbilson/readlater/llm"
 	"github.com/rcbilson/readlater/www"
 )
 
@@ -24,12 +22,7 @@ func main() {
 		log.Fatal("error reading environment variables:", err)
 	}
 
-	llm, err := llm.New(context.Background(), theModel.Params)
-	if err != nil {
-		log.Fatal("error initializing llm interface:", err)
-	}
-
-	summarizer := newSummarizer(llm, *theModel)
+	summarizer := pandocSummarizer()
 
 	db, err := NewRepo(spec.DbFile)
 	if err != nil {
