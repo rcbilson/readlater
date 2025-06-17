@@ -1,16 +1,15 @@
-package www
+package main
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"testing"
+	"fmt"
+
+	"github.com/rcbilson/readlater/www"
 )
 
 var urls = [...]string{
 	"https://www.allrecipes.com/recipe/220943/chef-johns-buttermilk-biscuits",
 	"https://www.seriouseats.com/classic-banana-bread-recipe",
-        "https://www.npr.org/2025/06/09/nx-s1-5340706/homes-energy-tips-heating-air-conditioning",
 	//"https://www.seriouseats.com/bravetart-homemade-cinnamon-rolls-recipe",
 	//"https://www.recipetineats.com/christmas-cake-moist-easy-fruit-cake/",
 	//"https://www.spendwithpennies.com/easy-cheesy-scalloped-potatoes-and-the-secret-to-getting-them-to-cook-quickly/",
@@ -20,34 +19,25 @@ var urls = [...]string{
 	//"https://kaleforniakravings.com/easy-pan-seared-salmon-with-lemon-dijon-sauce",
 }
 
-func TestFetch(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-
+func FetchTest(fetcher www.FetcherFunc, name string) {
+	fmt.Printf("%s ============================\n", name)
+	errors := 0
+	successes := 0
 	for _, url := range urls {
-		bytes, err := FetcherCombined(context.Background(), url)
+		bytes, err := fetcher(context.Background(), url)
 		if err != nil {
-			t.Errorf("Failed to fetch %s", url)
-		}
-
-		// save files for other tests
-		base := filepath.Base(url)
-		path := filepath.Join("testdata", base+".html")
-		file, err := os.Create(path)
-		if err != nil {
-			t.Errorf("Error creating file: %v", err)
-		}
-		defer file.Close()
-
-		_, err = file.Write(bytes)
-		if err != nil {
-			t.Errorf("Error writing to file: %v", err)
+			fmt.Printf("%s error: %v\n", url, err)
+			errors++
+		} else {
+			fmt.Printf("%s success length: %d\n", url, len(bytes))
+			successes++
 		}
 	}
+	fmt.Printf("%s: successes:%d errors:%d\n", name, successes, errors)
+}
 
-	_, err := Fetcher(context.Background(), "not a valid url")
-	if err == nil {
-		t.Error("Failed to return error for invalid url")
-	}
+func main() {
+	FetchTest(www.Fetcher, "Fetcher")
+	FetchTest(www.FetcherSpoof, "FetcherSpoof")
+	FetchTest(www.FetcherCurl, "FetcherCurl")
 }
