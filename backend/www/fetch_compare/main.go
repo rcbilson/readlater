@@ -24,12 +24,12 @@ func FetchTest(fetcher www.FetcherFunc, name string) {
 	errors := 0
 	successes := 0
 	for _, url := range urls {
-		bytes, err := fetcher(context.Background(), url)
+		bytes, finalURL, err := fetcher(context.Background(), url)
 		if err != nil {
 			fmt.Printf("%s error: %v\n", url, err)
 			errors++
 		} else {
-			fmt.Printf("%s success length: %d\n", url, len(bytes))
+			fmt.Printf("%s -> %s success length: %d\n", url, finalURL, len(bytes))
 			successes++
 		}
 	}

@@ -26,10 +26,12 @@ func TestFetch(t *testing.T) {
 	}
 
 	for _, url := range urls {
-		bytes, err := FetcherCombined(context.Background(), url)
+		bytes, finalURL, err := FetcherCombined(context.Background(), url)
 		if err != nil {
 			t.Errorf("Failed to fetch %s", url)
 		}
+		
+		t.Logf("Original URL: %s, Final URL: %s", url, finalURL)
 
 		// save files for other tests
 		base := filepath.Base(url)
@@ -46,7 +48,7 @@ func TestFetch(t *testing.T) {
 		}
 	}
 
-	_, err := Fetcher(context.Background(), "not a valid url")
+	_, _, err := Fetcher(context.Background(), "not a valid url")
 	if err == nil {
 		t.Error("Failed to return error for invalid url")
 	}

@@ -50,7 +50,7 @@ func TestArticles(t *testing.T) {
 		bytes, err := os.ReadFile(htmlPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				bytes, err = www.Fetcher(context.Background(), url)
+				bytes, _, err = www.Fetcher(context.Background(), url)
 				if err != nil {
 					t.Errorf("Failed to fetch %s: %v", url, err)
 					continue

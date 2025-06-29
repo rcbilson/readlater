@@ -21,8 +21,8 @@ var urls = [...]string{
 	"https://knilson.org",
 }
 
-func mockFetcher(_ context.Context, url string) ([]byte, error) {
-	return []byte("html for " + url), nil
+func mockFetcher(_ context.Context, url string) ([]byte, string, error) {
+	return []byte("html for " + url), url, nil
 }
 
 type summaryStruct struct {

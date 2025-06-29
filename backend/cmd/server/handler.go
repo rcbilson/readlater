@@ -192,28 +192,38 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			logError(w, fmt.Sprintf("Invalid URL: %v", err), http.StatusBadRequest)
 			return
 		}
+		// First try to get article using original URL
 		article, ok := db.Get(ctx, req.Url)
+		var finalURL string
 		if !ok {
 			log.Println("fetching article", req.Url)
-			html, err := fetcher(ctx, req.Url)
+			html, finalURLFromFetcher, err := fetcher(ctx, req.Url)
+			finalURL = finalURLFromFetcher
 			if err != nil {
 				logError(w, fmt.Sprintf("Error retrieving article: %v", err), http.StatusBadRequest)
 			} else {
-				var stats llm.Usage
-				article.Contents, err = summarizer(ctx, html, &stats)
-				if err != nil {
-					logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
+				// Check if we already have this article using the final URL
+				if finalURL != req.Url {
+					article, ok = db.Get(ctx, finalURL)
 				}
-				err = db.Usage(ctx, Usage{req.Url, len(html), len(article.Contents), stats.InputTokens, stats.OutputTokens})
-				if err != nil {
-					log.Printf("Error updating usage: %v", err)
+				
+				if !ok {
+					var stats llm.Usage
+					article.Contents, err = summarizer(ctx, html, &stats)
+					if err != nil {
+						logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
+					}
+					err = db.Usage(ctx, Usage{finalURL, len(html), len(article.Contents), stats.InputTokens, stats.OutputTokens})
+					if err != nil {
+						log.Printf("Error updating usage: %v", err)
+					}
+					article.Title = extractTitle(&article.Contents, html, finalURL, req.TitleHint)
+					article.Url = finalURL
+					err = db.Insert(ctx, article)
+					if err != nil {
+						log.Printf("Error inserting into db: %v", err)
+					}
 				}
-			}
-			article.Title = extractTitle(&article.Contents, html, req.Url, req.TitleHint)
-			article.Url = req.Url
-			err = db.Insert(ctx, article)
-			if err != nil {
-				log.Printf("Error inserting into db: %v", err)
 			}
 		}
 
