@@ -209,7 +209,7 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 				if !ok {
 					article.Contents, err = summarizer(ctx, html)
 					if err != nil {
-						logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
+						logError(w, fmt.Sprintf("Error extracting article text: %v", err), http.StatusInternalServerError)
 					}
 					article.Title = extractTitle(&article.Contents, html, finalURL, req.TitleHint)
 					article.Url = finalURL
