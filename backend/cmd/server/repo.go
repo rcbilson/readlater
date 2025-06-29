@@ -110,6 +110,14 @@ func (repo *Repo) Insert(ctx context.Context, art *article) error {
 	return err
 }
 
+// Insert the article contents with a custom created timestamp
+func (repo *Repo) InsertWithTimestamp(ctx context.Context, art *article, createdTime string) error {
+	_, err := repo.db.ExecContext(ctx,
+		"INSERT INTO articles (title, url, contents, created) VALUES (?, ?, ?, ?)",
+		art.Title, art.Url, art.Contents, createdTime)
+	return err
+}
+
 // Insert the article contents corresponding to the url into the database
 func (repo *Repo) SetArchive(ctx context.Context, url string, archive bool) error {
 	_, err := repo.db.ExecContext(ctx,
