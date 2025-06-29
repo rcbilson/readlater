@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-
-	"github.com/rcbilson/readlater/llm"
 )
 
+type summarizeFunc func(ctx context.Context, article []byte) (string, error)
+
 func pandocSummarizer() summarizeFunc {
-	return func(ctx context.Context, article []byte, stats *llm.Usage) (string, error) {
+	return func(ctx context.Context, article []byte) (string, error) {
 		// Use os/exec to run pandoc
 		cmd := exec.CommandContext(ctx, "pandoc", "-f", "html", "-t", "commonmark", "--strip-comments")
 		stdin, err := cmd.StdinPipe()

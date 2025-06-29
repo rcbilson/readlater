@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rcbilson/readlater/llm"
 	"gotest.tools/assert"
 )
 
@@ -37,7 +36,7 @@ type articleListEntryStruct struct {
 
 type articleListStruct []articleListEntryStruct
 
-func mockSummarizer(_ context.Context, article []byte, stats *llm.Usage) (string, error) {
+func mockSummarizer(_ context.Context, article []byte) (string, error) {
 	// split the article into words and use each word as an ingredient
 	// this allows us to search for something non-trivial
 	return "# summary for " + string(article) + "\n" +

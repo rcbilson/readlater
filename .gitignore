@@ -5,3 +5,4 @@ tags
 frontend/node_modules
 aws
 data/
+.claude/settings.local.json

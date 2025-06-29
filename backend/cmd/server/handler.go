@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/rcbilson/readlater/llm"
 	"github.com/rcbilson/readlater/www"
 )
 
@@ -206,16 +205,11 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 				if finalURL != req.Url {
 					article, ok = db.Get(ctx, finalURL)
 				}
-				
+
 				if !ok {
-					var stats llm.Usage
-					article.Contents, err = summarizer(ctx, html, &stats)
+					article.Contents, err = summarizer(ctx, html)
 					if err != nil {
 						logError(w, fmt.Sprintf("Error communicating with llm: %v", err), http.StatusInternalServerError)
-					}
-					err = db.Usage(ctx, Usage{finalURL, len(html), len(article.Contents), stats.InputTokens, stats.OutputTokens})
-					if err != nil {
-						log.Printf("Error updating usage: %v", err)
 					}
 					article.Title = extractTitle(&article.Contents, html, finalURL, req.TitleHint)
 					article.Url = finalURL
