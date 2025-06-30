@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { AuthContext } from "@/components/ui/auth-context";
-import { LuBookmark, LuBookmarkCheck, LuDownload } from "react-icons/lu";
+import { LuBookmark, LuBookmarkCheck, LuDownload, LuLoader } from "react-icons/lu";
 import { useToggleArchive } from "./useToggleArchive";
-import { isArticleOffline, toggleArticleOffline } from "./localStorage";
+import { isArticleOffline, toggleArticleOffline, storeBatchArticlesOffline } from "./localStorage";
 import { Article } from "./Article";
 
 type ArticleEntry = {
@@ -29,6 +29,8 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const { token, resetAuth } = useContext(AuthContext);
   const toggleArchive = useToggleArchive();
   const [offlineArticles, setOfflineArticles] = useState<Set<string>>(new Set());
+  const [autoDownloading, setAutoDownloading] = useState<Set<string>>(new Set());
+  const [autoDownloadComplete, setAutoDownloadComplete] = useState(false);
 
   const fetchQuery = (queryPath: string) => {
     return async () => {
@@ -54,6 +56,12 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   });
   const recents = data;
 
+  // Reset auto-download state when query changes
+  useEffect(() => {
+    setAutoDownloadComplete(false);
+    setAutoDownloading(new Set());
+  }, [queryPath]);
+
   // Initialize offline articles state
   useEffect(() => {
     if (recents) {
@@ -66,6 +74,65 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
       setOfflineArticles(offlineSet);
     }
   }, [recents]);
+
+  // Auto-download all recent articles that aren't already offline
+  // Only auto-download for the recent page, not for archive or other pages
+  useEffect(() => {
+    if (!recents || !navigator.onLine || autoDownloadComplete || !queryPath.includes('/api/recents')) {
+      return;
+    }
+
+    const articlesToDownload = recents.filter(article => 
+      !isArticleOffline(article.url) && !autoDownloading.has(article.url)
+    );
+
+    if (articlesToDownload.length === 0) {
+      setAutoDownloadComplete(true);
+      return;
+    }
+
+    const downloadArticles = async () => {
+      const downloadingUrls = new Set(articlesToDownload.map(a => a.url));
+      setAutoDownloading(downloadingUrls);
+
+      const downloadPromises = articlesToDownload.map(async (entry) => {
+        try {
+          console.log("Auto-downloading:", entry.url);
+          const response = await axios.post<Article>("/api/summarize", { url: entry.url }, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          return response.data;
+        } catch (error) {
+          console.error('Error auto-downloading article:', entry.url, error);
+          if (error instanceof AxiosError && error.response?.status === 401) {
+            resetAuth();
+          }
+          return null;
+        }
+      });
+
+      try {
+        const downloadedArticles = await Promise.all(downloadPromises);
+        const successfulDownloads = downloadedArticles.filter((article): article is Article => article !== null);
+        
+        if (successfulDownloads.length > 0) {
+          storeBatchArticlesOffline(successfulDownloads);
+          setOfflineArticles(prev => {
+            const newSet = new Set(prev);
+            successfulDownloads.forEach(article => newSet.add(article.url));
+            return newSet;
+          });
+        }
+      } catch (error) {
+        console.error('Error storing batch articles:', error);
+      } finally {
+        setAutoDownloading(new Set());
+        setAutoDownloadComplete(true);
+      }
+    };
+
+    downloadArticles();
+  }, [recents, token, resetAuth, autoDownloadComplete, autoDownloading]);
 
   const handleArticleClick = (entry: ArticleEntry) => {
     return () => {
@@ -101,6 +168,11 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const handleDownloadClick = (entry: ArticleEntry) => {
     return async (e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent triggering article click
+      
+      // Prevent manual download if auto-downloading
+      if (autoDownloading.has(entry.url)) {
+        return;
+      }
       
       const isCurrentlyOffline = offlineArticles.has(entry.url);
       
@@ -148,8 +220,8 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
             <div className="url">{new URL(recent.url).hostname}</div>
           </div>
           <div className="articleButtons">
-            <div className={`downloadButton ${offlineArticles.has(recent.url) ? 'downloaded' : ''}`} onClick={handleDownloadClick(recent)}>
-              <LuDownload />
+            <div className={`downloadButton ${offlineArticles.has(recent.url) ? 'downloaded' : ''} ${autoDownloading.has(recent.url) ? 'downloading' : ''}`} onClick={handleDownloadClick(recent)}>
+              {autoDownloading.has(recent.url) ? <LuLoader className="animate-spin" /> : <LuDownload />}
             </div>
             <div className="archiveButton" onClick={handleArchiveClick(recent)}>
               {recent.archived ? <LuBookmarkCheck /> : <LuBookmark />}

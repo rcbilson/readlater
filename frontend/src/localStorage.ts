@@ -97,6 +97,40 @@ export const toggleArticleOffline = (article: Article): boolean => {
   }
 };
 
+// Store multiple articles offline efficiently
+export const storeBatchArticlesOffline = (articles: Article[]): void => {
+  try {
+    const existingIndex = getOfflineArticles();
+    const updatedIndex = [...existingIndex];
+    
+    articles.forEach(article => {
+      // Store the article data
+      const articleKey = STORAGE_KEY_PREFIX + encodeURIComponent(article.url);
+      localStorage.setItem(articleKey, JSON.stringify(article));
+
+      // Update index entry
+      const existingEntryIndex = updatedIndex.findIndex(a => a.url === article.url);
+      const entry: OfflineArticleEntry = {
+        url: article.url,
+        title: article.title,
+        downloadedAt: Date.now()
+      };
+
+      if (existingEntryIndex >= 0) {
+        updatedIndex[existingEntryIndex] = entry;
+      } else {
+        updatedIndex.push(entry);
+      }
+    });
+
+    // Single index update for all articles
+    localStorage.setItem(STORAGE_INDEX_KEY, JSON.stringify(updatedIndex));
+  } catch (error) {
+    console.error('Error storing articles offline:', error);
+    throw new Error('Failed to store articles offline. Your device may be out of storage space.');
+  }
+};
+
 // Clear all offline articles (for cleanup if needed)
 export const clearAllOfflineArticles = (): void => {
   try {
