@@ -24,14 +24,14 @@ func saveFile(t *testing.T, path string, bytes []byte) {
 	}
 }
 
-func TestPandoc(t *testing.T) {
+func TestHtmlToMarkdown(t *testing.T) {
 	var urls = []string{
 		"http://bbc.com/future/article/20250528-why-some-countries-dont-fluoridate-their-water?utm_source=pocket_shared",
 		"http://slate.com/life/2025/06/pride-2025-queer-lgbtq-trump-conservative.html?utm_source=pocket_shared",
 		"https://tastecooking.com/is-it-soft-tofus-time/",
 	}
 
-	summarizer := pandocSummarizer()
+	summarizer := htmlToMarkdownSummarizer()
 
 	for _, url := range urls {
 		base := filepath.Base(url)
@@ -52,7 +52,7 @@ func TestPandoc(t *testing.T) {
 		}
 		contents, err := summarizer(context.Background(), bytes)
 		if err != nil {
-			t.Errorf("%s: error from pandoc: %v", url, err)
+			t.Errorf("%s: error from html-to-markdown: %v", url, err)
 		}
 		// save contents for possible analysis
 		mdPath := strings.TrimSuffix(htmlPath, ".html") + ".md"

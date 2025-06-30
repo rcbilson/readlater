@@ -6,15 +6,15 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/url"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
+	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/rcbilson/readlater/sqlite"
 	"github.com/rcbilson/readlater/www"
 )
@@ -347,33 +347,31 @@ func extractTitle(md *string, html []byte, urlString string, titleHint string) s
 	}
 }
 
-func pandocSummarizer() summarizeFunc {
+func htmlToMarkdownSummarizer() summarizeFunc {
 	return func(ctx context.Context, article []byte) (string, error) {
-		// Use os/exec to run pandoc
-		cmd := exec.CommandContext(ctx, "pandoc", "-f", "html", "-t", "commonmark", "--strip-comments")
-		stdin, err := cmd.StdinPipe()
+		converter := md.NewConverter("", true, nil)
+		
+		// Configure options for better conversion
+		converter.Use(md.Plugin(func(c *md.Converter) []md.Rule {
+			return []md.Rule{
+				// Custom rules can be added here if needed
+			}
+		}))
+		
+		// Convert HTML to markdown
+		markdown, err := converter.ConvertString(string(article))
 		if err != nil {
-			return "", fmt.Errorf("failed to get stdin pipe: %w", err)
+			return "", err
 		}
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			return "", fmt.Errorf("failed to get stdout pipe: %w", err)
-		}
-		if err := cmd.Start(); err != nil {
-			return "", fmt.Errorf("failed to start pandoc: %w", err)
-		}
-		_, err = stdin.Write(article)
-		stdin.Close()
-		if err != nil {
-			return "", fmt.Errorf("failed to write to pandoc stdin: %w", err)
-		}
-		output, err := io.ReadAll(stdout)
-		if err != nil {
-			return "", fmt.Errorf("failed to read pandoc output: %w", err)
-		}
-		if err := cmd.Wait(); err != nil {
-			return "", fmt.Errorf("pandoc failed: %w", err)
-		}
-		return string(output), nil
+		
+		// Clean up extra whitespace and normalize line endings
+		markdown = strings.TrimSpace(markdown)
+		
+		return markdown, nil
 	}
+}
+
+// Legacy function name for compatibility
+func pandocSummarizer() summarizeFunc {
+	return htmlToMarkdownSummarizer()
 }
