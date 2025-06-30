@@ -23,7 +23,6 @@ FROM alpine:latest
 RUN apk update && apk add sqlite pandoc curl
 COPY --from=build-frontend /src/dist /app/frontend
 COPY --from=build-server /bin /app/bin
-COPY scripts /bin
 ENV READLATER_DBFILE=/app/data/readlater.db
 ENV READLATER_FRONTENDPATH=/app/frontend
 ENV READLATER_PORT=80
