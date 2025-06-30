@@ -50,4 +50,9 @@ CREATE TRIGGER articles_au AFTER UPDATE ON articles BEGIN
   INSERT INTO fts(rowid, url, title, contents) VALUES (new.rowid, new.url, new.title, new.contents);
 END;
 	`,
+        // version 2
+        `
+CREATE INDEX articles_lastAccess ON articles(lastAccess);
+CREATE INDEX articles_created ON articles(created);
+        `,
 }

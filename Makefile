@@ -11,7 +11,7 @@ docker:
 
 .PHONY: backend
 backend:
-	. ./aws && cd backend/cmd/server && go run -tags fts5 .
+	cd backend/cmd/server && go run -tags fts5 .
 
 .PHONY: frontend
 frontend:
