@@ -51,7 +51,7 @@ const RecentPage: React.FC = () => {
   return (
     <div id="recentContainer">
       {isOnline ? (
-        <ArticleQuery queryPath='/api/recents?count=50' />
+        <ArticleQuery queryPath='/api/recents?count=30' />
       ) : (
         <>
           <div style={{ padding: '0.5em', background: '#f5f5f5', marginBottom: '1em', borderRadius: '4px' }}>
