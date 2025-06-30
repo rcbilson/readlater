@@ -28,6 +28,16 @@ const MainPage: React.FC = () => {
     return DOMPurify.sanitize(html);
   }
 
+  const markArticleAsRead = async (url: string) => {
+    try {
+      await axios.post("/api/markRead", { url }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    } catch (error) {
+      console.warn("Failed to mark article as read:", error);
+    }
+  }
+
   const fetchArticle = async () => {
     try {
       if (!articleUrl) {
@@ -40,6 +50,7 @@ const MainPage: React.FC = () => {
         console.log("using offline article " + articleUrl);
         const html = await formatArticle(offlineArticle.contents);
         setContent(html);
+        markArticleAsRead(articleUrl);
         return offlineArticle;
       }
 
@@ -61,6 +72,7 @@ const MainPage: React.FC = () => {
       const article = await response.data;
       const html = await formatArticle(article.contents);
       setContent(html);
+      markArticleAsRead(articleUrl);
       return article;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {

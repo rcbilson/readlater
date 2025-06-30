@@ -38,6 +38,7 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 	authHandler := noAuth()
 	// Handle the api routes in the backend
 	mux.Handle("POST /api/summarize", authHandler(summarize(summarizer, db, fetcher)))
+	mux.Handle("POST /api/markRead", authHandler(markRead(db)))
 	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
 	mux.Handle("GET /api/archive", authHandler(fetchArchive(db)))
 	mux.Handle("GET /api/search", authHandler(search(db)))
@@ -192,7 +193,7 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			return
 		}
 		// First try to get article using original URL
-		article, ok := db.Get(ctx, req.Url)
+		article, ok := db.GetWithoutUpdating(ctx, req.Url)
 		var finalURL string
 		if !ok {
 			log.Println("fetching article", req.Url)
@@ -203,7 +204,7 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			} else {
 				// Check if we already have this article using the final URL
 				if finalURL != req.Url {
-					article, ok = db.Get(ctx, finalURL)
+					article, ok = db.GetWithoutUpdating(ctx, finalURL)
 				}
 
 				if !ok {
@@ -223,5 +224,28 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(article)
+	}
+}
+
+func markRead(db Repo) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, user User) {
+		ctx := r.Context()
+
+		var req struct {
+			Url string `json:"url"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			logError(w, fmt.Sprintf("JSON decode error: %v", err), http.StatusBadRequest)
+			return
+		}
+		
+		err = db.MarkRead(ctx, req.Url)
+		if err != nil {
+			logError(w, fmt.Sprintf("Error marking article as read: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

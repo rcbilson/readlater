@@ -56,6 +56,17 @@ func (repo *Repo) Get(ctx context.Context, url string) (*article, bool) {
 	return &art, true
 }
 
+// Returns a article contents without updating unread status or lastAccess time
+func (repo *Repo) GetWithoutUpdating(ctx context.Context, url string) (*article, bool) {
+	row := repo.db.QueryRowContext(ctx, "SELECT title, contents FROM articles WHERE url = ?", url)
+	art := article{Url: url}
+	err := row.Scan(&art.Title, &art.Contents)
+	if err != nil {
+		return &art, false
+	}
+	return &art, true
+}
+
 // Returns the most recently-accessed articles
 func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 	query := `
@@ -123,6 +134,14 @@ func (repo *Repo) SetArchive(ctx context.Context, url string, archive bool) erro
 	_, err := repo.db.ExecContext(ctx,
 		"UPDATE articles SET archived = ? WHERE url = ?",
 		archive, url)
+	return err
+}
+
+// Mark an article as read by updating unread status and lastAccess time
+func (repo *Repo) MarkRead(ctx context.Context, url string) error {
+	_, err := repo.db.ExecContext(ctx,
+		"UPDATE articles SET unread = false, lastAccess = datetime('now') WHERE url = ?",
+		url)
 	return err
 }
 
