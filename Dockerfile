@@ -20,7 +20,7 @@ COPY frontend .
 RUN yarnpkg run build
 
 FROM alpine:latest
-RUN apk update && apk add sqlite pandoc curl
+RUN apk update && apk add sqlite curl
 COPY --from=build-frontend /src/dist /app/frontend
 COPY --from=build-server /bin /app/bin
 ENV READLATER_DBFILE=/app/data/readlater.db
