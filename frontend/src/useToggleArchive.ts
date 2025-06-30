@@ -3,6 +3,7 @@ import { toaster } from "@/components/ui/toaster"
 import axios from "axios";
 import { AuthContext } from "@/components/ui/auth-context";
 import { useQueryClient } from '@tanstack/react-query';
+import { removeArticleOffline, isArticleOffline } from "./localStorage";
 
 const useToggleArchive = () => {
   const { token } = useContext(AuthContext);
@@ -17,6 +18,11 @@ const useToggleArchive = () => {
         },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      
+      // If archiving and article is downloaded offline, remove it from offline storage
+      if (archived && isArticleOffline(url)) {
+        removeArticleOffline(url);
+      }
       
       // Invalidate all article list queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['articleList'] });

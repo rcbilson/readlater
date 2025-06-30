@@ -80,9 +80,21 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   };
 
   const handleArchiveClick = (entry: ArticleEntry) => {
-    return (e: React.MouseEvent) => {
+    return async (e: React.MouseEvent) => {
       e.stopPropagation(); // Prevent triggering article click
-      toggleArchive(entry.url, !entry.archived);
+      
+      const willBeArchived = !entry.archived;
+      
+      // If archiving and article is currently offline, remove it from UI state
+      if (willBeArchived && offlineArticles.has(entry.url)) {
+        setOfflineArticles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(entry.url);
+          return newSet;
+        });
+      }
+      
+      await toggleArchive(entry.url, willBeArchived);
     }
   };
 
