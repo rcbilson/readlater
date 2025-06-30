@@ -12,6 +12,8 @@ import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
+import { getOfflineArticle } from './localStorage';
+import { useNetworkStatus } from './useNetworkStatus';
 import "./Article.css";
 
 const MainPage: React.FC = () => {
@@ -19,6 +21,7 @@ const MainPage: React.FC = () => {
   const { token, resetAuth } = useContext(AuthContext);
   const [debug, setDebug] = useState(false);
   const [content, setContent] = useState<string>("");
+  const isOnline = useNetworkStatus();
  
   const formatArticle = async (contents: string) => {
     const html = await marked(contents);
@@ -29,6 +32,20 @@ const MainPage: React.FC = () => {
     try {
       if (!articleUrl) {
         throw new Error("no article to fetch");
+      }
+
+      // First, check if article is available offline
+      const offlineArticle = getOfflineArticle(articleUrl);
+      if (offlineArticle) {
+        console.log("using offline article " + articleUrl);
+        const html = await formatArticle(offlineArticle.contents);
+        setContent(html);
+        return offlineArticle;
+      }
+
+      // If not offline or not available offline, try to fetch from network
+      if (!isOnline) {
+        throw new Error("Article not available offline and you're not connected to the internet");
       }
 
       console.log("fetching " + articleUrl);

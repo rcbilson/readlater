@@ -44,9 +44,32 @@
   min-width: 0;
 }
 
+.articleButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.downloadButton {
+  padding: 0.25em;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  color: #888;
+}
+
+.downloadButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.downloadButton.downloaded {
+  color: #000;
+}
+
 .archiveButton {
   padding: 0.25em;
-  margin-left: 0.5em;
   cursor: pointer;
   border-radius: 4px;
   display: flex;
@@ -56,6 +79,15 @@
 
 .archiveButton:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+.offlineIndicator {
+  padding: 0.25em 0.5em;
+  font-size: 0.75em;
+  color: #666;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin-left: 0.5em;
 }
 
 .textclick {
@@ -69,4 +101,14 @@
 
 #articleHeader #titleBox {
   flex: 1;
+}
+
+/* Disabled tab styles */
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.disabled * {
+  pointer-events: none;
 }

@@ -1,15 +1,26 @@
 import { Tabs } from '@chakra-ui/react'
 import { LuBookmarkPlus, LuStar, LuClock, LuSearch } from "react-icons/lu"
-import { useLocation, Link } from "react-router-dom"
+import { useLocation, Link, useNavigate } from "react-router-dom"
+import { useEffect } from "react"
 
 import ArchivePage from "./ArchivePage"
 import RecentPage from "./RecentPage"
 import SearchPage from "./SearchPage"
 import AddPage from "./AddPage"
+import { useNetworkStatus } from "./useNetworkStatus"
 
 export default function MainPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const isOnline = useNetworkStatus();
   const activeTab = location.pathname.split('/')[1] || 'recent';
+
+  // When going offline, redirect non-Recent tabs to Recent
+  useEffect(() => {
+    if (!isOnline && activeTab !== 'recent') {
+      navigate('/recent');
+    }
+  }, [isOnline, activeTab, navigate]);
 
   return (
     <Tabs.Root defaultValue="favorites" variant="line"
@@ -21,23 +32,35 @@ export default function MainPage() {
             Recent
           </Link>
         </Tabs.Trigger>
-        <Tabs.Trigger value="archive">
+        <Tabs.Trigger value="archive" disabled={!isOnline} className={!isOnline ? 'disabled' : ''}>
           <LuStar />
-          <Link to="/archive">
-            Archive
-          </Link>
+          {isOnline ? (
+            <Link to="/archive">
+              Archive
+            </Link>
+          ) : (
+            <span style={{ color: '#ccc' }}>Archive</span>
+          )}
         </Tabs.Trigger>
-        <Tabs.Trigger value="search">
+        <Tabs.Trigger value="search" disabled={!isOnline} className={!isOnline ? 'disabled' : ''}>
           <LuSearch />
-          <Link to="/search">
-            Search
-          </Link>
+          {isOnline ? (
+            <Link to="/search">
+              Search
+            </Link>
+          ) : (
+            <span style={{ color: '#ccc' }}>Search</span>
+          )}
         </Tabs.Trigger>
-        <Tabs.Trigger value="add">
+        <Tabs.Trigger value="add" disabled={!isOnline} className={!isOnline ? 'disabled' : ''}>
           <LuBookmarkPlus />
-          <Link to="/add">
-            Add
-          </Link>
+          {isOnline ? (
+            <Link to="/add">
+              Add
+            </Link>
+          ) : (
+            <span style={{ color: '#ccc' }}>Add</span>
+          )}
         </Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="archive">
