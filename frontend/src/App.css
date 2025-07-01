@@ -60,12 +60,23 @@
   color: #888;
 }
 
+/* Light mode hover */
 .downloadButton:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Dark mode hover */
+:is(.dark *) .downloadButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .downloadButton.downloaded {
   color: #000;
+}
+
+/* Dark mode downloaded state - white icon */
+:is(.dark *) .downloadButton.downloaded {
+  color: #fff;
 }
 
 .archiveButton {
@@ -77,8 +88,14 @@
   transition: background-color 0.2s;
 }
 
+/* Light mode hover */
 .archiveButton:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode hover */
+:is(.dark *) .archiveButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .offlineIndicator {
