@@ -28,11 +28,6 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/archive",
-    element: <MainPage />,
-    errorElement: <ErrorPage />,
-  },
-  {
     path: "/add",
     element: <MainPage />,
     errorElement: <ErrorPage />,

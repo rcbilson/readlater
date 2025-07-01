@@ -1,9 +1,8 @@
 import { Tabs } from '@chakra-ui/react'
-import { LuBookmarkPlus, LuStar, LuClock, LuSearch } from "react-icons/lu"
+import { LuBookmarkPlus, LuClock, LuSearch } from "react-icons/lu"
 import { useLocation, Link, useNavigate } from "react-router-dom"
 import { useEffect } from "react"
 
-import ArchivePage from "./ArchivePage"
 import RecentPage from "./RecentPage"
 import SearchPage from "./SearchPage"
 import AddPage from "./AddPage"
@@ -32,16 +31,6 @@ export default function MainPage() {
             Recent
           </Link>
         </Tabs.Trigger>
-        <Tabs.Trigger value="archive" disabled={!isOnline} className={!isOnline ? 'disabled' : ''}>
-          <LuStar />
-          {isOnline ? (
-            <Link to="/archive">
-              Archive
-            </Link>
-          ) : (
-            <span style={{ color: '#ccc' }}>Archive</span>
-          )}
-        </Tabs.Trigger>
         <Tabs.Trigger value="search" disabled={!isOnline} className={!isOnline ? 'disabled' : ''}>
           <LuSearch />
           {isOnline ? (
@@ -63,9 +52,6 @@ export default function MainPage() {
           )}
         </Tabs.Trigger>
       </Tabs.List>
-      <Tabs.Content value="archive">
-        <ArchivePage />
-      </Tabs.Content>
       <Tabs.Content value="recent">
         <RecentPage />
       </Tabs.Content>
