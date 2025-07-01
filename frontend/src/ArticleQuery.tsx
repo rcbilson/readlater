@@ -30,7 +30,6 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const toggleArchive = useToggleArchive();
   const [offlineArticles, setOfflineArticles] = useState<Set<string>>(new Set());
   const [autoDownloading, setAutoDownloading] = useState<Set<string>>(new Set());
-  const [autoDownloadComplete, setAutoDownloadComplete] = useState(false);
 
   const fetchQuery = (queryPath: string) => {
     return async () => {
@@ -58,7 +57,6 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
 
   // Reset auto-download state when query changes
   useEffect(() => {
-    setAutoDownloadComplete(false);
     setAutoDownloading(new Set());
   }, [queryPath]);
 
@@ -78,7 +76,7 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   // Auto-download all recent articles that aren't already offline
   // Only auto-download for the recent page, not for archive or other pages
   useEffect(() => {
-    if (!recents || !navigator.onLine || autoDownloadComplete || !queryPath.includes('/api/recents')) {
+    if (!recents || !navigator.onLine || !queryPath.includes('/api/recents')) {
       return;
     }
 
@@ -87,7 +85,6 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
     );
 
     if (articlesToDownload.length === 0) {
-      setAutoDownloadComplete(true);
       return;
     }
 
@@ -127,12 +124,11 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
         console.error('Error storing batch articles:', error);
       } finally {
         setAutoDownloading(new Set());
-        setAutoDownloadComplete(true);
       }
     };
 
     downloadArticles();
-  }, [recents, token, resetAuth, autoDownloadComplete, autoDownloading]);
+  }, [recents, token, resetAuth, autoDownloading, queryPath]);
 
   const handleArticleClick = (entry: ArticleEntry) => {
     return () => {
