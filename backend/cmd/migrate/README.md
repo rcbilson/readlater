@@ -37,6 +37,7 @@ go build -tags fts5 -o migrate-articles cmd/migrate/*.go
 - **Dry-run mode** for safe testing
 - **Progress tracking** with detailed logging
 - **Error handling** - continues processing if individual articles fail
+- **30-second timeout** - prevents hanging on unresponsive URLs
 - **Content comparison** - skips articles where content hasn't changed
 - **Rate limiting** - adds small delays between requests to be respectful to servers
 - **Statistics** - shows total processed, updated, skipped, and failed counts

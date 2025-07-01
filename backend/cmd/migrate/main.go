@@ -87,8 +87,12 @@ func migrateArticle(ctx context.Context, db *sql.DB, art article, fetcher www.Fe
 	
 	log.Printf("[%d/%d] Processing: %s", stats.processed, stats.total, art.Url)
 	
+	// Create a context with 30-second timeout for this article
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	
 	// Fetch fresh HTML content
-	htmlBytes, _, err := fetcher(ctx, art.Url)
+	htmlBytes, _, err := fetcher(timeoutCtx, art.Url)
 	if err != nil {
 		log.Printf("  ERROR: Failed to fetch %s: %v", art.Url, err)
 		stats.failed++
@@ -96,7 +100,7 @@ func migrateArticle(ctx context.Context, db *sql.DB, art article, fetcher www.Fe
 	}
 	
 	// Convert to markdown using new summarizer
-	newContent, err := summarizer(ctx, htmlBytes)
+	newContent, err := summarizer(timeoutCtx, htmlBytes)
 	if err != nil {
 		log.Printf("  ERROR: Failed to convert %s: %v", art.Url, err)
 		stats.failed++
@@ -112,7 +116,7 @@ func migrateArticle(ctx context.Context, db *sql.DB, art article, fetcher www.Fe
 	
 	// Update database if not in dry-run mode
 	if !dryRun {
-		err = updateArticleContent(ctx, db, art.Url, newContent)
+		err = updateArticleContent(timeoutCtx, db, art.Url, newContent)
 		if err != nil {
 			log.Printf("  ERROR: Failed to update %s: %v", art.Url, err)
 			stats.failed++
