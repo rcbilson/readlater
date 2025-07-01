@@ -42,7 +42,7 @@ export default defineConfig({
         name: 'Read Later',
         short_name: 'ReadLater',
         description: 'Save articles to read later',
-        theme_color: '#1a202c',
+        theme_color: 'MidnightBlue',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
@@ -57,7 +57,16 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png'
           }
-        ]
+        ],
+        share_target: {
+          action: '/share-target/',
+          enctype: 'application/x-www-form-urlencoded',
+          method: 'GET',
+          params: {
+            title: 'title',
+            text: 'text'
+          }
+        }
       }
     })
   ],
