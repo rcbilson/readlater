@@ -43,13 +43,8 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 	mux.Handle("GET /api/archive", authHandler(fetchArchive(db)))
 	mux.Handle("GET /api/search", authHandler(search(db)))
 	mux.Handle("PUT /api/setArchive", authHandler(setArchive(db)))
-	// bundled assets and static resources
-	mux.Handle("GET /assets/", http.FileServer(http.Dir(frontendPath)))
-	mux.Handle("GET /static/", http.FileServer(http.Dir(frontendPath)))
-	// For other requests, serve up the frontend code
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, fmt.Sprintf("%s/index.html", frontendPath))
-	})
+	// frontend
+	mux.Handle("GET /", http.FileServer(http.Dir(frontendPath)))
 	log.Println("server listening on port", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
 }
@@ -239,7 +234,7 @@ func markRead(db Repo) AuthHandlerFunc {
 			logError(w, fmt.Sprintf("JSON decode error: %v", err), http.StatusBadRequest)
 			return
 		}
-		
+
 		err = db.MarkRead(ctx, req.Url)
 		if err != nil {
 			logError(w, fmt.Sprintf("Error marking article as read: %v", err), http.StatusInternalServerError)
