@@ -12,7 +12,7 @@ import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
-import { getOfflineArticle } from './localStorage';
+import { getOfflineArticle, updateOfflineArticleUnreadStatus } from './localStorage';
 import { useNetworkStatus } from './useNetworkStatus';
 import "./Article.css";
 
@@ -36,6 +36,9 @@ const MainPage: React.FC = () => {
     } catch (error) {
       console.warn("Failed to mark article as read:", error);
     }
+    
+    // Also update the offline storage if the article is cached
+    updateOfflineArticleUnreadStatus(url, false);
   }
 
   const fetchArticle = async () => {

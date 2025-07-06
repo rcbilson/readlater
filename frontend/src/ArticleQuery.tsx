@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AuthContext } from "@/components/ui/auth-context";
 import { LuBookmark, LuBookmarkCheck, LuDownload, LuLoader } from "react-icons/lu";
 import { useToggleArchive } from "./useToggleArchive";
-import { isArticleOffline, toggleArticleOffline, storeBatchArticlesOffline, getOfflineArticles } from "./localStorage";
+import { isArticleOffline, toggleArticleOffline, getOfflineArticles, storeArticleOffline } from "./localStorage";
 import { Article } from "./Article";
 
 type ArticleEntry = {
@@ -61,7 +61,7 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
       title: offlineArticle.title,
       url: offlineArticle.url,
       hasBody: true, // Offline articles always have body
-      unread: true,  // Default to unread for offline articles
+      unread: offlineArticle.unread ?? true,  // Use stored unread status, default to true for backward compatibility
       archived: false // Offline articles are not archived
     }));
   };
@@ -127,7 +127,13 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
         const successfulDownloads = downloadedArticles.filter((article): article is Article => article !== null);
         
         if (successfulDownloads.length > 0) {
-          storeBatchArticlesOffline(successfulDownloads);
+          // Store each article with its original unread status
+          successfulDownloads.forEach(article => {
+            const originalEntry = articlesToDownload.find(entry => entry.url === article.url);
+            const unreadStatus = originalEntry?.unread ?? true;
+            storeArticleOffline(article, unreadStatus);
+          });
+          
           setOfflineArticles(prev => {
             const newSet = new Set(prev);
             successfulDownloads.forEach(article => newSet.add(article.url));
@@ -203,8 +209,8 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
           });
           const article = response.data;
           
-          // Store offline
-          toggleArticleOffline(article);
+          // Store offline with current unread status
+          toggleArticleOffline(article, entry.unread);
           setOfflineArticles(prev => new Set([...prev, entry.url]));
         } catch (error) {
           console.error('Error downloading article:', error);
