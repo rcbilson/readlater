@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AuthContext } from "@/components/ui/auth-context";
 import { LuBookmark, LuBookmarkCheck, LuDownload, LuLoader } from "react-icons/lu";
 import { useToggleArchive } from "./useToggleArchive";
-import { isArticleOffline, toggleArticleOffline, storeBatchArticlesOffline } from "./localStorage";
+import { isArticleOffline, toggleArticleOffline, storeBatchArticlesOffline, getOfflineArticles } from "./localStorage";
 import { Article } from "./Article";
 
 type ArticleEntry = {
@@ -52,8 +52,22 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const {isError, data, error} = useQuery({
     queryKey: ['articleList', queryPath],
     queryFn: fetchQuery(queryPath),
+    enabled: navigator.onLine, // Only fetch when online
   });
-  const recents = data;
+  
+  // Convert offline articles to ArticleEntry format
+  const getOfflineArticleEntries = (): ArticleEntry[] => {
+    return getOfflineArticles().map(offlineArticle => ({
+      title: offlineArticle.title,
+      url: offlineArticle.url,
+      hasBody: true, // Offline articles always have body
+      unread: true,  // Default to unread for offline articles
+      archived: false // Offline articles are not archived
+    }));
+  };
+  
+  // Use offline articles when offline, otherwise use fetched data
+  const recents = navigator.onLine ? data : getOfflineArticleEntries();
 
   // Reset auto-download state when query changes
   useEffect(() => {
@@ -203,8 +217,34 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
     }
   };
 
-  if (isError) {
+  if (isError && navigator.onLine) {
     return <div>An error occurred: {error.message}</div>
+  }
+  
+  // Show offline indicator when offline
+  if (!navigator.onLine) {
+    return (
+      <div>
+        <div className="offline-indicator" style={{ padding: '10px', background: '#f0f0f0', marginBottom: '10px' }}>
+          📱 Offline - Showing downloaded articles
+        </div>
+        <div id="articleList">
+          {recents && recents.map((recent) =>
+            <div className={`articleEntry ${recent.unread ? 'unread' : ''}`} key={recent.url} onClick={handleArticleClick(recent)}>
+              <div className="articleContent">
+                <div className="title">{recent.title}</div>
+                <div className="url">{new URL(recent.url).hostname}</div>
+              </div>
+              <div className="articleButtons">
+                <div className={`downloadButton downloaded`}>
+                  <LuDownload />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
