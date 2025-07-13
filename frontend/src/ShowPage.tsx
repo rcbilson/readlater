@@ -20,7 +20,6 @@ const MainPage: React.FC = () => {
   const { articleUrl } = useParams();
   const { token, resetAuth } = useContext(AuthContext);
   const [debug, setDebug] = useState(false);
-  const [content, setContent] = useState<string>("");
   const isOnline = useNetworkStatus();
  
   const formatArticle = async (contents: string) => {
@@ -52,7 +51,7 @@ const MainPage: React.FC = () => {
       if (offlineArticle) {
         console.log("using offline article " + articleUrl);
         const html = await formatArticle(offlineArticle.contents);
-        setContent(html);
+        offlineArticle.rendered = html;
         markArticleAsRead(articleUrl);
         return offlineArticle;
       }
@@ -74,7 +73,7 @@ const MainPage: React.FC = () => {
       });
       const article = await response.data;
       const html = await formatArticle(article.contents);
-      setContent(html);
+      article.rendered = html;
       markArticleAsRead(articleUrl);
       return article;
     } catch (error) {
@@ -136,7 +135,7 @@ const MainPage: React.FC = () => {
       {isPending && <div>We're loading this article, just a moment...</div>}
       {!isPending && !article && <div>We don't have a version of {articleLink}. You can see the original by clicking the link.</div>}
       {debug && article && <pre>{article.contents}</pre>}
-      {!debug && article && 
+      {!debug && article?.rendered && 
         <div>
           <div id="articleHeader">
             <div id="titleBox">
@@ -149,7 +148,7 @@ const MainPage: React.FC = () => {
           </div>
           <ErrorBoundary
               fallback={<div>We weren't able to summarize {articleLink}. You can see the original by clicking the link.</div>}>
-            <div className="article" dangerouslySetInnerHTML={{ __html: content }} />
+            <div className="article" dangerouslySetInnerHTML={{ __html: article.rendered }} />
           </ErrorBoundary>
         </div>
       }
