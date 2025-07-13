@@ -10,6 +10,8 @@ import (
 	"strconv"
 
 	"github.com/rcbilson/readlater/www"
+
+	_ "net/http/pprof"
 )
 
 type articleEntry struct {
@@ -34,19 +36,18 @@ type httpError struct {
 }
 
 func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port int, frontendPath string, _ string) {
-	mux := http.NewServeMux()
 	authHandler := noAuth()
 	// Handle the api routes in the backend
-	mux.Handle("POST /api/summarize", authHandler(summarize(summarizer, db, fetcher)))
-	mux.Handle("POST /api/markRead", authHandler(markRead(db)))
-	mux.Handle("GET /api/recents", authHandler(fetchRecents(db)))
-	mux.Handle("GET /api/archive", authHandler(fetchArchive(db)))
-	mux.Handle("GET /api/search", authHandler(search(db)))
-	mux.Handle("PUT /api/setArchive", authHandler(setArchive(db)))
+	http.Handle("POST /api/summarize", authHandler(summarize(summarizer, db, fetcher)))
+	http.Handle("POST /api/markRead", authHandler(markRead(db)))
+	http.Handle("GET /api/recents", authHandler(fetchRecents(db)))
+	http.Handle("GET /api/archive", authHandler(fetchArchive(db)))
+	http.Handle("GET /api/search", authHandler(search(db)))
+	http.Handle("PUT /api/setArchive", authHandler(setArchive(db)))
 	// frontend
-	mux.Handle("GET /", http.FileServer(http.Dir(frontendPath)))
+	http.Handle("GET /", http.FileServer(http.Dir(frontendPath)))
 	log.Println("server listening on port", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), mux))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
 func logError(w http.ResponseWriter, msg string, code int) {
