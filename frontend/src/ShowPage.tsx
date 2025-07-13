@@ -89,6 +89,7 @@ const MainPage: React.FC = () => {
     queryKey: ['article', articleUrl],
     queryFn: fetchArticle,
     refetchOnWindowFocus: false,
+    networkMode: 'offlineFirst',
   });
   const article = data;
 
