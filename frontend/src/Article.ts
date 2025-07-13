@@ -9,5 +9,6 @@ export type Article = {
   title: string;
   url: string;
   contents: string;
+  rendered?: string;
 }
 
