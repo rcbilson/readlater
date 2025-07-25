@@ -11,3 +11,4 @@
 
 ## Backend Development
 - To verify that the backend code builds correctly, use `make check-full`
+- When implementing a change to the schema, do this by adding a new set of SQL statements to the list in backend/cmd/server/schema.go that implements the required set of changes and migrations.

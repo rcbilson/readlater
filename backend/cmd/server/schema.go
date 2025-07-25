@@ -55,4 +55,18 @@ END;
 CREATE INDEX articles_lastAccess ON articles(lastAccess);
 CREATE INDEX articles_created ON articles(created);
         `,
+	// version 3
+	`
+ALTER TABLE articles ADD COLUMN lastModified datetime;
+
+UPDATE articles SET lastModified = current_timestamp WHERE lastModified IS NULL;
+
+CREATE TRIGGER articles_update_modified
+AFTER UPDATE ON articles
+BEGIN
+  UPDATE articles SET lastModified = current_timestamp WHERE url = NEW.url;
+END;
+
+CREATE INDEX articles_lastModified ON articles(lastModified);
+	`,
 }

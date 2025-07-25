@@ -44,6 +44,7 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 	http.Handle("GET /api/archive", authHandler(fetchArchive(db)))
 	http.Handle("GET /api/search", authHandler(search(db)))
 	http.Handle("PUT /api/setArchive", authHandler(setArchive(db)))
+	http.Handle("GET /api/changes", authHandler(fetchChanges(db)))
 	// frontend
 	http.Handle("GET /", http.FileServer(http.Dir(frontendPath)))
 	log.Println("server listening on port", port)
@@ -220,6 +221,27 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(article)
+	}
+}
+
+func fetchChanges(db Repo) AuthHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, _ User) {
+		since := r.URL.Query().Get("since")
+		if since == "" {
+			// If no timestamp provided, return empty list
+			json.NewEncoder(w).Encode(articleList{})
+			w.Header().Set("Content-Type", "application/json")
+			return
+		}
+
+		changesList, err := db.GetChangesSince(r.Context(), since)
+		if err != nil {
+			logError(w, fmt.Sprintf("Error fetching article changes: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		json.NewEncoder(w).Encode(changesList)
+		w.Header().Set("Content-Type", "application/json")
 	}
 }
 

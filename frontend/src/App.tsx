@@ -1,6 +1,7 @@
 // Supports weights 100-900
 //import '@fontsource-variable/outfit';
 
+import { useEffect } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -15,6 +16,7 @@ import ErrorPage from "./ErrorPage.jsx";
 import ShowPage from "./ShowPage.tsx";
 import MainPage from "./MainPage.tsx";
 import ShareTarget from "./ShareTarget.tsx";
+import { syncManager } from "./syncManager";
 
 const router = createBrowserRouter([
   {
@@ -49,11 +51,26 @@ const router = createBrowserRouter([
 
 const queryClient = new QueryClient()
 
+// App initialization component
+function AppWithSync() {
+  useEffect(() => {
+    // Initialize sync manager on app startup
+    syncManager.loadInitialData().catch(console.error);
+    
+    // Cleanup on unmount
+    return () => {
+      syncManager.destroy();
+    };
+  }, []);
+
+  return <RouterProvider router={router} />;
+}
+
 export default function App() {
   return (
     <Provider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <AppWithSync />
       </QueryClientProvider>
     </Provider>
   )

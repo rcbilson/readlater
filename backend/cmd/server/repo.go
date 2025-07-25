@@ -180,3 +180,28 @@ func (repo *Repo) Usage(ctx context.Context, usage Usage) error {
 		usage.Url, usage.LengthIn, usage.LengthOut, usage.TokensIn, usage.TokensOut)
 	return err
 }
+
+// Get articles that have been modified since the given timestamp
+func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleList, error) {
+	query := `
+		SELECT title, url, (contents IS NOT NULL), unread, archived 
+		FROM articles 
+		WHERE lastModified > ? 
+		ORDER BY lastModified DESC`
+	rows, err := repo.db.QueryContext(ctx, query, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result articleList
+
+	for rows.Next() {
+		var r articleEntry
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+	return result, nil
+}

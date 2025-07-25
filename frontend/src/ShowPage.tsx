@@ -12,7 +12,7 @@ import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
-import { getOfflineArticle, updateOfflineArticleUnreadStatus } from './localStorage';
+import { getOfflineArticle, updateOfflineArticleUnreadStatus } from './localDataService';
 import { useNetworkStatus } from './useNetworkStatus';
 import "./Article.css";
 
@@ -47,7 +47,7 @@ const MainPage: React.FC = () => {
       }
 
       // First, check if article is available offline
-      const offlineArticle = getOfflineArticle(articleUrl);
+      const offlineArticle = await getOfflineArticle(articleUrl);
       if (offlineArticle) {
         console.log("using offline article " + articleUrl);
         const html = await formatArticle(offlineArticle.contents);
