@@ -46,18 +46,22 @@ const MainPage: React.FC = () => {
         throw new Error("no article to fetch");
       }
 
-      // First, check if article is available offline
+      // First, check if article is available offline with full content
+      console.log("ShowPage: Checking for offline article:", articleUrl);
       const offlineArticle = await getOfflineArticle(articleUrl);
-      if (offlineArticle) {
-        console.log("using offline article " + articleUrl);
+      console.log("ShowPage: getOfflineArticle result:", offlineArticle ? "found" : "not found");
+      
+      if (offlineArticle && offlineArticle.contents) {
+        console.log("ShowPage: Using offline article:", articleUrl, "content length:", offlineArticle.contents.length);
         const html = await formatArticle(offlineArticle.contents);
         offlineArticle.rendered = html;
         markArticleAsRead(articleUrl);
         return offlineArticle;
       }
 
-      // If not offline or not available offline, try to fetch from network
+      // If not available offline or no content, try to fetch from network
       if (!isOnline) {
+        console.log("ShowPage: Offline and no full content available for:", articleUrl);
         throw new Error("Article not available offline and you're not connected to the internet");
       }
 

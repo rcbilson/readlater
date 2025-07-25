@@ -83,10 +83,21 @@ export const removeArticleOffline = async (url: string): Promise<void> => {
 // Get an article from local storage
 export const getOfflineArticle = async (url: string): Promise<Article | null> => {
   try {
+    console.log('localDataService: getOfflineArticle called for:', url);
     const localArticle = await getArticle(url);
-    if (localArticle?.contents) {
-      return localToArticle(localArticle);
+    console.log('localDataService: getArticle result:', localArticle ? 'found' : 'not found');
+    
+    if (localArticle) {
+      console.log('localDataService: Article details - hasBody:', localArticle.hasBody, 'contents length:', localArticle.contents?.length || 0);
     }
+    
+    if (localArticle?.contents) {
+      const convertedArticle = localToArticle(localArticle);
+      console.log('localDataService: Converted article, contents length:', convertedArticle.contents?.length || 0);
+      return convertedArticle;
+    }
+    
+    console.log('localDataService: No contents found, returning null');
     return null;
   } catch (error) {
     console.error('Error reading local article:', error);

@@ -10,6 +10,7 @@ export interface LocalArticle {
   unread: boolean;
   archived: boolean;
   downloadedAt: number;
+  lastAccess?: number; // When the article was last accessed/read
   lastModified?: string;
   lastKnownServerState?: LocalArticle; // For conflict resolution
 }
@@ -41,7 +42,7 @@ class ReadLaterDatabase extends Dexie {
     super('ReadLaterDB');
     
     this.version(1).stores({
-      articles: 'url, title, unread, archived, downloadedAt, lastModified',
+      articles: 'url, title, unread, archived, downloadedAt, lastAccess, lastModified',
       syncQueue: '++id, url, operation, timestamp',
       metadata: 'key'
     });
@@ -74,13 +75,16 @@ export const getAllArticles = async (): Promise<LocalArticle[]> => {
 
 // Get recent unarchived articles
 export const getRecentArticles = async (count: number = 50): Promise<LocalArticle[]> => {
-  const allArticles = await db.articles
-    .orderBy('downloadedAt')
-    .reverse()
-    .toArray();
+  const allArticles = await db.articles.toArray();
   
   return allArticles
     .filter(article => !article.archived)
+    .sort((a, b) => {
+      // Sort by lastAccess descending, fallback to downloadedAt if lastAccess is missing
+      const aTime = a.lastAccess || a.downloadedAt;
+      const bTime = b.lastAccess || b.downloadedAt;
+      return bTime - aTime;
+    })
     .slice(0, count);
 };
 
@@ -112,7 +116,7 @@ export const hasArticle = async (url: string): Promise<boolean> => {
   return count > 0;
 };
 
-// Update article read status
+// Update article read status (lastAccess is handled by server sync)
 export const markArticleRead = async (url: string, unread: boolean = false): Promise<void> => {
   await db.articles.where('url').equals(url).modify({ unread });
 };
@@ -175,6 +179,7 @@ export const articleToLocal = (article: Article, unread: boolean = true, archive
     unread,
     archived,
     downloadedAt: Date.now()
+    // lastAccess will come from server sync, don't set it here
   };
 };
 

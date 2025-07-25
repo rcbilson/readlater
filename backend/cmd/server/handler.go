@@ -15,11 +15,12 @@ import (
 )
 
 type articleEntry struct {
-	Title    string `json:"title"`
-	Url      string `json:"url"`
-	HasBody  bool   `json:"hasBody"`
-	Unread   bool   `json:"unread"`
-	Archived bool   `json:"archived"`
+	Title      string `json:"title"`
+	Url        string `json:"url"`
+	HasBody    bool   `json:"hasBody"`
+	Unread     bool   `json:"unread"`
+	Archived   bool   `json:"archived"`
+	LastAccess string `json:"lastAccess"`
 }
 
 type articleList []articleEntry

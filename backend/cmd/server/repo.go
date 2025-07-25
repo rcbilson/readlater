@@ -70,7 +70,7 @@ func (repo *Repo) GetWithoutUpdating(ctx context.Context, url string) (*article,
 // Returns the most recently-accessed articles
 func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived FROM articles WHERE NOT archived
+		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess FROM articles WHERE NOT archived
 		ORDER BY lastAccess DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -81,7 +81,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived, &r.LastAccess)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 // Returns the most frequently-accessed articles
 func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived FROM articles 
+		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess FROM articles 
 		ORDER BY created DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -104,7 +104,7 @@ func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived, &r.LastAccess)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func (repo *Repo) Usage(ctx context.Context, usage Usage) error {
 // Get articles that have been modified since the given timestamp
 func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived 
+		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess 
 		FROM articles 
 		WHERE lastModified > ? 
 		ORDER BY lastModified DESC`
@@ -197,7 +197,7 @@ func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleLis
 
 	for rows.Next() {
 		var r articleEntry
-		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived)
+		err := rows.Scan(&r.Title, &r.Url, &r.HasBody, &r.Unread, &r.Archived, &r.LastAccess)
 		if err != nil {
 			return nil, err
 		}

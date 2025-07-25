@@ -29,6 +29,12 @@ class ApiClient {
     }
     const data = await response.json();
     
+    // Handle null/undefined response or empty array
+    if (!data || !Array.isArray(data)) {
+      console.log('SyncManager: No changes found or invalid response');
+      return [];
+    }
+    
     // Convert server response to LocalArticle format
     return data.map((item: {
       url: string;
@@ -36,12 +42,14 @@ class ApiClient {
       hasBody: boolean;
       unread: boolean;
       archived: boolean;
+      lastAccess: string;
     }) => ({
       url: item.url,
       title: item.title,
-      hasBody: item.hasBody,
+      hasBody: item.hasBody, // Server has content
       unread: item.unread,
       archived: item.archived,
+      lastAccess: new Date(item.lastAccess).getTime(), // Convert server timestamp to local timestamp
       downloadedAt: Date.now(),
       contents: undefined // Server doesn't send full content in changes
     }));
@@ -74,18 +82,26 @@ class ApiClient {
     }
     const data = await response.json();
     
+    // Handle null/undefined response
+    if (!data || !Array.isArray(data)) {
+      console.log('SyncManager: No recent articles found or invalid response');
+      return [];
+    }
+    
     return data.map((item: {
       url: string;
       title: string;
       hasBody: boolean;
       unread: boolean;
       archived: boolean;
+      lastAccess: string;
     }) => ({
       url: item.url,
       title: item.title,
       hasBody: item.hasBody,
       unread: item.unread,
       archived: item.archived,
+      lastAccess: new Date(item.lastAccess).getTime(),
       downloadedAt: Date.now(),
       contents: undefined
     }));
@@ -98,18 +114,26 @@ class ApiClient {
     }
     const data = await response.json();
     
+    // Handle null/undefined response
+    if (!data || !Array.isArray(data)) {
+      console.log('SyncManager: No archived articles found or invalid response');
+      return [];
+    }
+    
     return data.map((item: {
       url: string;
       title: string;
       hasBody: boolean;
       unread: boolean;
       archived: boolean;
+      lastAccess: string;
     }) => ({
       url: item.url,
       title: item.title,
       hasBody: item.hasBody,
       unread: item.unread,
       archived: item.archived,
+      lastAccess: new Date(item.lastAccess).getTime(),
       downloadedAt: Date.now(),
       contents: undefined
     }));
@@ -387,24 +411,51 @@ export class SyncManager {
       const recents = await this.apiClient.getRecents(50);
       console.log('SyncManager: Received', recents.length, 'articles from server');
       
-      // Store recent articles locally
+      // Store recent articles locally and auto-download content
       let storedCount = 0;
+      let downloadedCount = 0;
+      
       for (const article of recents) {
-        console.log('SyncManager: Processing article:', article.title, 'archived:', article.archived);
+        console.log('SyncManager: Processing article:', article.title, 'hasBody:', article.hasBody);
         const existing = await getArticle(article.url);
+        
         if (!existing) {
           const localArticle = {
             ...article,
             downloadedAt: Date.now(),
+            // Keep server's lastAccess time - don't override it
             lastKnownServerState: article
           };
-          console.log('SyncManager: Storing new article:', localArticle.title, 'archived:', localArticle.archived);
+          console.log('SyncManager: Storing new article:', localArticle.title);
           await storeArticle(localArticle);
           storedCount++;
+        }
+        
+        // Auto-download content for articles that have body but no local content
+        const currentArticle = existing || await getArticle(article.url);
+        if (currentArticle && article.hasBody && !currentArticle.contents) {
+          try {
+            console.log('SyncManager: Auto-downloading content for:', article.title);
+            const fullArticle = await this.apiClient.summarize(article.url);
+            
+            // Update the stored article with content
+            await storeArticle({
+              ...currentArticle,
+              contents: fullArticle.contents,
+              hasBody: true,
+              lastKnownServerState: article
+            });
+            
+            downloadedCount++;
+            console.log('SyncManager: Downloaded content for:', article.title, 'length:', fullArticle.contents?.length || 0);
+          } catch (error) {
+            console.error('SyncManager: Failed to download content for:', article.title, error);
+          }
         }
       }
       
       console.log('SyncManager: Stored', storedCount, 'new articles locally');
+      console.log('SyncManager: Downloaded content for', downloadedCount, 'articles');
       await updateLastSyncTimestamp();
       console.log('SyncManager: Initial data load completed successfully');
     } catch (error) {
