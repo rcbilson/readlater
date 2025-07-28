@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"strings"
 	"time"
 	"unicode"
@@ -195,13 +194,13 @@ func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleLis
 			sqliteSince = t.UTC().Format("2006-01-02 15:04:05")
 		}
 	}
-	
+
 	query := `
 		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess 
 		FROM articles 
 		WHERE lastModified > ? 
 		ORDER BY lastModified DESC`
-	
+
 	rows, err := repo.db.QueryContext(ctx, query, sqliteSince)
 	if err != nil {
 		return nil, err
