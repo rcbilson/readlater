@@ -302,8 +302,16 @@ export class SyncManager {
     const lastSync = await getLastSyncTimestamp();
     const serverChanges = await this.apiClient.fetchChanges(lastSync);
     
+    let changesApplied = 0;
     for (const serverArticle of serverChanges) {
       await this.resolveAndMerge(serverArticle);
+      changesApplied++;
+    }
+    
+    // Notify status change if we applied any changes from server
+    if (changesApplied > 0) {
+      console.log(`SyncManager: Applied ${changesApplied} changes from server`);
+      await this.notifyStatusChange();
     }
   }
 

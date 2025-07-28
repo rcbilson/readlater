@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
+	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -183,12 +186,23 @@ func (repo *Repo) Usage(ctx context.Context, usage Usage) error {
 
 // Get articles that have been modified since the given timestamp
 func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleList, error) {
+	// Convert ISO format timestamp to SQLite format if needed
+	// ISO: "2024-01-01T12:00:00.000Z" -> SQLite: "2024-01-01 12:00:00"
+	sqliteSince := since
+	if strings.Contains(since, "T") {
+		// Parse ISO format and convert to SQLite format
+		if t, err := time.Parse(time.RFC3339, since); err == nil {
+			sqliteSince = t.UTC().Format("2006-01-02 15:04:05")
+		}
+	}
+	
 	query := `
 		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess 
 		FROM articles 
 		WHERE lastModified > ? 
 		ORDER BY lastModified DESC`
-	rows, err := repo.db.QueryContext(ctx, query, since)
+	
+	rows, err := repo.db.QueryContext(ctx, query, sqliteSince)
 	if err != nil {
 		return nil, err
 	}

@@ -60,16 +60,41 @@ const RecentPage: React.FC = () => {
     }
   }, [isOnline]);
 
-  // Refresh articles after sync
+  // Refresh articles after sync operations and when sync status changes
   useEffect(() => {
-    if (!syncStatus.isSyncing && syncStatus.lastSyncTime) {
+    if (!syncStatus.isSyncing) {
       const refreshArticles = async () => {
+        console.log('RecentPage: Refreshing articles after sync...');
         const localArticles = await getRecentArticles(50);
-        setArticles(localArticles.filter(a => !a.archived));
+        const unarchivedArticles = localArticles.filter(a => !a.archived);
+        console.log('RecentPage: Refreshed to', unarchivedArticles.length, 'unarchived articles');
+        setArticles(unarchivedArticles);
       };
       refreshArticles().catch(console.error);
     }
-  }, [syncStatus.isSyncing, syncStatus.lastSyncTime]);
+  }, [syncStatus.isSyncing, syncStatus.pendingOperations]);
+
+  // Periodic refresh to catch any missed sync updates
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!syncStatus.isSyncing) {
+        console.log('RecentPage: Periodic refresh check...');
+        const localArticles = await getRecentArticles(50);
+        const unarchivedArticles = localArticles.filter(a => !a.archived);
+        
+        // Only update if the article count or URLs have changed
+        if (unarchivedArticles.length !== articles.length || 
+            !unarchivedArticles.every((article, index) => 
+              articles[index] && articles[index].url === article.url
+            )) {
+          console.log('RecentPage: Detected changes during periodic refresh, updating...');
+          setArticles(unarchivedArticles);
+        }
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [articles, syncStatus.isSyncing]);
 
   const handleArticleClick = (article: LocalArticle) => {
     return () => {
