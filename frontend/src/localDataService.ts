@@ -84,8 +84,20 @@ export const removeArticleOffline = async (url: string): Promise<void> => {
 export const getOfflineArticle = async (url: string): Promise<Article | null> => {
   try {
     console.log('localDataService: getOfflineArticle called for:', url);
-    const localArticle = await getArticle(url);
-    console.log('localDataService: getArticle result:', localArticle ? 'found' : 'not found');
+    
+    // First try exact URL match
+    let localArticle = await getArticle(url);
+    console.log('localDataService: Exact URL match result:', localArticle ? 'found' : 'not found');
+    
+    // If not found, try without query parameters (canonical URL)
+    if (!localArticle) {
+      const canonicalUrl = url.split('?')[0];
+      if (canonicalUrl !== url) {
+        console.log('localDataService: Trying canonical URL:', canonicalUrl);
+        localArticle = await getArticle(canonicalUrl);
+        console.log('localDataService: Canonical URL match result:', localArticle ? 'found' : 'not found');
+      }
+    }
     
     if (localArticle) {
       console.log('localDataService: Article details - hasBody:', localArticle.hasBody, 'contents length:', localArticle.contents?.length || 0);
