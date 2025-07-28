@@ -12,12 +12,7 @@ const useDoAdd = () => {
   const queryClient = useQueryClient();
   return async (url: string, titleHint?: string) => {
     try {
-        const fixedUrl = new URL(url);
-        // react-router double decodes slash characters in urls
-        // see https://github.com/remix-run/react-router/pull/13813
-        // try to work around this by throwing away search params
-        fixedUrl.search = "";
-        const request: ArticleRequest = { url: fixedUrl.toString(), titleHint: titleHint };
+        const request: ArticleRequest = { url: url, titleHint: titleHint };
         await axios.post("/api/summarize", request, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         })

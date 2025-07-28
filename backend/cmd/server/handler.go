@@ -52,6 +52,46 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
+// canonicalizeURL removes query parameters from a URL to create a canonical version.
+// This is critical for URL consistency across the application:
+//
+// 1. URLs can arrive with query parameters from various sources:
+//    - User input (e.g., "https://example.com/article?utm_source=twitter")
+//    - HTTP redirects that add tracking parameters
+//    - Server responses that include session/auth tokens in URLs
+//
+// 2. Without canonicalization, the same article could be stored multiple times:
+//    - "https://example.com/article" 
+//    - "https://example.com/article?utm_source=twitter"
+//    - "https://example.com/article?ref=homepage"
+//
+// 3. This causes problems in the sync system:
+//    - Frontend might request "https://example.com/article?utm_source=twitter"
+//    - But article was stored as "https://example.com/article"
+//    - Database lookup fails, preventing offline access
+//
+// 4. By canonicalizing URLs before storage, we ensure:
+//    - One canonical URL per article in the database
+//    - Consistent URL matching for sync operations
+//    - Reliable offline article access regardless of how URL was accessed
+//
+// 5. react-router double decodes slash characters in urls
+//    - see https://github.com/remix-run/react-router/pull/13813
+//    - this means that when we compute a ShowPage URL it may be incorreclty
+//      decoded, leading to duplicat articles
+//
+// The frontend no longer needs to canonicalize URLs since the backend handles this.
+func canonicalizeURL(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	// Remove query parameters and fragment
+	parsedURL.RawQuery = ""
+	parsedURL.Fragment = ""
+	return parsedURL.String(), nil
+}
+
 func logError(w http.ResponseWriter, msg string, code int) {
 	log.Printf("%d %s", code, msg)
 	http.Error(w, msg, code)
@@ -200,9 +240,16 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			if err != nil {
 				logError(w, fmt.Sprintf("Error retrieving article: %v", err), http.StatusBadRequest)
 			} else {
-				// Check if we already have this article using the final URL
+				// Check if we already have this article using the final URL or its canonical form
 				if finalURL != req.Url {
 					article, ok = db.GetWithoutUpdating(ctx, finalURL)
+					// Also check canonical URL if not found
+					if !ok {
+						canonicalURL, err := canonicalizeURL(finalURL)
+						if err == nil && canonicalURL != finalURL {
+							article, ok = db.GetWithoutUpdating(ctx, canonicalURL)
+						}
+					}
 				}
 
 				if !ok {
@@ -211,7 +258,13 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 						logError(w, fmt.Sprintf("Error extracting article text: %v", err), http.StatusInternalServerError)
 					}
 					article.Title = extractTitle(&article.Contents, html, finalURL, req.TitleHint)
-					article.Url = finalURL
+					// Canonicalize URL by removing query parameters before storing
+					canonicalURL, err := canonicalizeURL(finalURL)
+					if err != nil {
+						log.Printf("Error canonicalizing URL %s: %v", finalURL, err)
+						canonicalURL = finalURL // fallback to original URL
+					}
+					article.Url = canonicalURL
 					err = db.Insert(ctx, article)
 					if err != nil {
 						log.Printf("Error inserting into db: %v", err)
