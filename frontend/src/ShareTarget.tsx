@@ -16,6 +16,10 @@ export default function ShareTarget() {
 
       if (!url) return;
 
+      console.log("ShareTarget: Received URL:", url);
+      console.log("ShareTarget: URL length:", url.length);
+      
+      // The backend should canonicalize URLs automatically, so we can send the full URL
       doAdd(url, title ?? undefined);
       return;
     }
