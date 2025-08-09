@@ -6,7 +6,7 @@ import { LuBookmark, LuDownload, LuLoader, LuWifi, LuWifiOff } from "react-icons
 import { LocalArticle, getRecentArticles } from "./database";
 import { syncManager, SyncStatus } from "./syncManager";
 import { useNetworkStatus } from "./useNetworkStatus";
-import { useColorModeValue } from "@/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 // import { useToggleArchive } from "./useToggleArchive";
 
 const RecentPage: React.FC = () => {

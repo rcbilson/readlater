@@ -1,4 +1,4 @@
-import { toaster } from "@/components/ui/toaster"
+import { toaster } from "@/components/ui/toaster-config"
 import { useQueryClient } from '@tanstack/react-query';
 import { syncManager } from "./syncManager";
 
