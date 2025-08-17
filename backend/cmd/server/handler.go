@@ -56,29 +56,29 @@ func handler(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc, port in
 // This is critical for URL consistency across the application:
 //
 // 1. URLs can arrive with query parameters from various sources:
-//    - User input (e.g., "https://example.com/article?utm_source=twitter")
-//    - HTTP redirects that add tracking parameters
-//    - Server responses that include session/auth tokens in URLs
+//   - User input (e.g., "https://example.com/article?utm_source=twitter")
+//   - HTTP redirects that add tracking parameters
+//   - Server responses that include session/auth tokens in URLs
 //
 // 2. Without canonicalization, the same article could be stored multiple times:
-//    - "https://example.com/article" 
-//    - "https://example.com/article?utm_source=twitter"
-//    - "https://example.com/article?ref=homepage"
+//   - "https://example.com/article"
+//   - "https://example.com/article?utm_source=twitter"
+//   - "https://example.com/article?ref=homepage"
 //
 // 3. This causes problems in the sync system:
-//    - Frontend might request "https://example.com/article?utm_source=twitter"
-//    - But article was stored as "https://example.com/article"
-//    - Database lookup fails, preventing offline access
+//   - Frontend might request "https://example.com/article?utm_source=twitter"
+//   - But article was stored as "https://example.com/article"
+//   - Database lookup fails, preventing offline access
 //
 // 4. By canonicalizing URLs before storage, we ensure:
-//    - One canonical URL per article in the database
-//    - Consistent URL matching for sync operations
-//    - Reliable offline article access regardless of how URL was accessed
+//   - One canonical URL per article in the database
+//   - Consistent URL matching for sync operations
+//   - Reliable offline article access regardless of how URL was accessed
 //
 // 5. react-router double decodes slash characters in urls
-//    - see https://github.com/remix-run/react-router/pull/13813
-//    - this means that when we compute a ShowPage URL it may be incorreclty
-//      decoded, leading to duplicat articles
+//   - see https://github.com/remix-run/react-router/pull/13813
+//   - this means that when we compute a ShowPage URL it may be incorreclty
+//     decoded, leading to duplicat articles
 //
 // The frontend no longer needs to canonicalize URLs since the backend handles this.
 func canonicalizeURL(rawURL string) (string, error) {
@@ -238,7 +238,30 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			html, finalURLFromFetcher, err := fetcher(ctx, req.Url)
 			finalURL = finalURLFromFetcher
 			if err != nil {
-				logError(w, fmt.Sprintf("Error retrieving article: %v", err), http.StatusBadRequest)
+				// Fetch failed - add article with empty contents
+				log.Printf("Error retrieving article %s: %v - adding with empty contents", req.Url, err)
+				canonicalURL, canonErr := canonicalizeURL(req.Url)
+				if canonErr != nil {
+					log.Printf("Error canonicalizing URL %s: %v", req.Url, canonErr)
+					canonicalURL = req.Url // fallback to original URL
+				}
+				article.Url = canonicalURL
+				article.Title = req.TitleHint
+				if article.Title == "" {
+					parsedUrl, err := url.Parse(article.Url)
+					if err == nil {
+						article.Title = parsedUrl.Path
+					} else {
+						article.Title = article.Url
+					}
+				}
+				article.Contents = "" // empty contents for failed fetch
+				err = db.Insert(ctx, article)
+				if err != nil {
+					log.Printf("Error inserting article with empty contents: %v", err)
+					logError(w, fmt.Sprintf("Error saving article: %v", err), http.StatusInternalServerError)
+					return
+				}
 			} else {
 				// Check if we already have this article using the final URL or its canonical form
 				if finalURL != req.Url {
@@ -255,7 +278,9 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 				if !ok {
 					article.Contents, err = summarizer(ctx, html)
 					if err != nil {
-						logError(w, fmt.Sprintf("Error extracting article text: %v", err), http.StatusInternalServerError)
+						// Summarization failed - add article with empty contents but keep HTML title
+						log.Printf("Error extracting article text for %s: %v - adding with empty contents", finalURL, err)
+						article.Contents = "" // empty contents for failed summarization
 					}
 					article.Title = extractTitle(&article.Contents, html, finalURL, req.TitleHint)
 					// Canonicalize URL by removing query parameters before storing
@@ -268,6 +293,8 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 					err = db.Insert(ctx, article)
 					if err != nil {
 						log.Printf("Error inserting into db: %v", err)
+						logError(w, fmt.Sprintf("Error saving article: %v", err), http.StatusInternalServerError)
+						return
 					}
 				}
 			}
