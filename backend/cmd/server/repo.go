@@ -72,7 +72,8 @@ func (repo *Repo) GetWithoutUpdating(ctx context.Context, url string) (*article,
 // Returns the most recently-accessed articles
 func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess FROM articles WHERE NOT archived
+		SELECT title, url, (contents IS NOT NULL AND length(contents) > 0), unread, archived, lastAccess
+                FROM articles WHERE NOT archived
 		ORDER BY lastAccess DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
