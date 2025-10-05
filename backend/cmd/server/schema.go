@@ -69,4 +69,12 @@ END;
 
 CREATE INDEX articles_lastModified ON articles(lastModified);
 	`,
+	// version 4
+	`
+CREATE TRIGGER articles_insert_modified
+AFTER INSERT ON articles
+BEGIN
+  UPDATE articles SET lastModified = current_timestamp WHERE url = NEW.url;
+END;
+	`,
 }
