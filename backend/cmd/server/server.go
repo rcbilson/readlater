@@ -30,5 +30,5 @@ func main() {
 	}
 	defer db.Close()
 
-	handler(summarizer, db, www.Fetcher, spec.Port, spec.FrontendPath, spec.GClientId)
+	handler(summarizer, db, www.FetcherCombined, spec.Port, spec.FrontendPath, spec.GClientId)
 }
