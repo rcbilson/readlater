@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS build-server
+FROM golang:1.25-alpine AS build-server
 RUN apk update && apk add gcc libc-dev
 WORKDIR /src
 COPY backend/go.mod backend/go.sum .

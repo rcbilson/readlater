@@ -1,12 +1,12 @@
 module github.com/rcbilson/readlater
 
-go 1.24.6
+go 1.25.1
 
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/mattn/go-sqlite3 v1.14.30
-	golang.org/x/net v0.43.0
+	github.com/mattn/go-sqlite3 v1.14.32
+	golang.org/x/net v0.44.0
 	gotest.tools v2.2.0+incompatible
 )
 
