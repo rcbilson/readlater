@@ -3,24 +3,34 @@
 // the article url is fetched and the text area below the url is updated
 // with the article contents.
 import React, { useState, useCallback, useEffect, useContext } from "react";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios, { AxiosError } from "axios";
 import { useQuery } from '@tanstack/react-query'
 import { ErrorBoundary } from "react-error-boundary";
 import { marked } from 'marked';
 import { AuthContext } from "@/components/ui/auth-context";
-import { LuShare2 } from "react-icons/lu";
+import { LuShare2, LuArrowLeft, LuBookmark } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
 import { getOfflineArticle } from './localDataService';
 import { useNetworkStatus } from './useNetworkStatus';
+import { syncManager } from './syncManager';
+import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 import "./Article.css";
 
 const MainPage: React.FC = () => {
   const { articleUrl } = useParams();
+  const navigate = useNavigate();
   const { token, resetAuth } = useContext(AuthContext);
   const [debug, setDebug] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const isOnline = useNetworkStatus();
+
+  // Color mode aware colors
+  const bgColor = useColorModeValue('white', '#1a1a1a');
+  const textColor = useColorModeValue('#000000', '#ffffff');
+  const borderColor = useColorModeValue('#e0e0e0', '#333333');
+  const hoverBgColor = useColorModeValue('#f0f0f0', '#2d2d2d');
  
   const formatArticle = async (contents: string) => {
     const html = await marked(contents);
@@ -118,10 +128,83 @@ const MainPage: React.FC = () => {
     }
   }
 
+  const handleBackClick = () => {
+    navigate(-1);
+  }
+
+  const handleArchiveClick = async () => {
+    if (!articleUrl || archiving) return;
+    
+    setArchiving(true);
+    try {
+      await syncManager.setArchive(articleUrl, true);
+      navigate(-1);
+    } catch (error) {
+      console.error('Failed to archive article:', error);
+      setArchiving(false);
+    }
+  }
+
   const articleLink = <a href={articleUrl}>{articleUrl}</a>;
 
   return (
     <div id="articleContainer">
+      {/* Icon Bar */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        backgroundColor: bgColor,
+        borderBottom: `1px solid ${borderColor}`,
+        padding: '0.75rem 1rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 100,
+        marginBottom: '1rem'
+      }}>
+        <button
+          onClick={handleBackClick}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            borderRadius: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            transition: 'background-color 0.2s',
+            color: textColor
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBgColor}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label="Go back"
+        >
+          <LuArrowLeft size={24} />
+        </button>
+        
+        <button
+          onClick={handleArchiveClick}
+          disabled={archiving || !articleUrl}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: archiving || !articleUrl ? 'not-allowed' : 'pointer',
+            padding: '0.5rem',
+            borderRadius: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            opacity: archiving || !articleUrl ? 0.5 : 1,
+            transition: 'background-color 0.2s',
+            color: textColor
+          }}
+          onMouseEnter={(e) => !archiving && articleUrl && (e.currentTarget.style.backgroundColor = hoverBgColor)}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label="Archive and go back"
+        >
+          <LuBookmark size={24} />
+        </button>
+      </div>
+
       {isError && <div>An error occurred: {error.message}</div>}
       {isPending && <div>We're loading this article, just a moment...</div>}
       {!isPending && !article && <div>We don't have a version of {articleLink}. You can see the original by clicking the link.</div>}
