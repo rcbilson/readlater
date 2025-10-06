@@ -12,7 +12,7 @@ import { AuthContext } from "@/components/ui/auth-context";
 import { LuShare2 } from "react-icons/lu";
 import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
-import { getOfflineArticle, updateOfflineArticleUnreadStatus } from './localDataService';
+import { getOfflineArticle } from './localDataService';
 import { useNetworkStatus } from './useNetworkStatus';
 import "./Article.css";
 
@@ -27,18 +27,6 @@ const MainPage: React.FC = () => {
     return DOMPurify.sanitize(html);
   }
 
-  const markArticleAsRead = async (url: string) => {
-    try {
-      await axios.post("/api/markRead", { url }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-    } catch (error) {
-      console.warn("Failed to mark article as read:", error);
-    }
-    
-    // Also update the offline storage if the article is cached
-    updateOfflineArticleUnreadStatus(url, false);
-  }
 
   const fetchArticle = async () => {
     try {
@@ -55,7 +43,6 @@ const MainPage: React.FC = () => {
         console.log("ShowPage: Using offline article:", articleUrl, "content length:", offlineArticle.contents.length);
         const html = await formatArticle(offlineArticle.contents);
         offlineArticle.rendered = html;
-        markArticleAsRead(articleUrl);
         return offlineArticle;
       }
 
@@ -78,7 +65,6 @@ const MainPage: React.FC = () => {
       const article = await response.data;
       const html = await formatArticle(article.contents);
       article.rendered = html;
-      markArticleAsRead(articleUrl);
       return article;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {

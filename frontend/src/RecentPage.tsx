@@ -7,11 +7,13 @@ import { LocalArticle, getRecentArticles } from "./database";
 import { syncManager, SyncStatus } from "./syncManager";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { useColorModeValue } from "@/components/ui/color-mode-hooks";
+import { useMarkAsRead } from "./useMarkAsRead";
 // import { useToggleArchive } from "./useToggleArchive";
 
 const RecentPage: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useNetworkStatus();
+  const markAsRead = useMarkAsRead();
   // const toggleArchive = useToggleArchive(); // Not needed in new implementation
   const [articles, setArticles] = useState<LocalArticle[]>([]);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -97,7 +99,10 @@ const RecentPage: React.FC = () => {
   }, [articles, syncStatus.isSyncing]);
 
   const handleArticleClick = (article: LocalArticle) => {
-    return () => {
+    return async () => {
+      // Mark article as read regardless of whether it has body or not
+      await markAsRead(article.url);
+      
       const encodedUrl = encodeURIComponent(article.url);
       if (article.hasBody) {
         navigate("/show/" + encodedUrl);
