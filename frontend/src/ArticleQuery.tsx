@@ -31,6 +31,13 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
   const [offlineArticles, setOfflineArticles] = useState<Set<string>>(new Set());
   const [autoDownloading, setAutoDownloading] = useState<Set<string>>(new Set());
 
+  const truncateTitle = (title: string, maxLength: number = 80): string => {
+    if (title.length <= maxLength) {
+      return title;
+    }
+    return title.substring(0, maxLength) + '...';
+  };
+
   const fetchQuery = (queryPath: string) => {
     return async () => {
       try {
@@ -238,7 +245,7 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
           {recents && recents.map((recent) =>
             <div className={`articleEntry ${recent.unread ? 'unread' : ''}`} key={recent.url} onClick={handleArticleClick(recent)}>
               <div className="articleContent">
-                <div className="title">{recent.title}</div>
+                <div className="title">{truncateTitle(recent.title)}</div>
                 <div className="url">{new URL(recent.url).hostname}</div>
               </div>
               <div className="articleButtons">
@@ -258,7 +265,7 @@ const ArticleQuery: React.FC<Props> = ({queryPath}: Props) => {
       {recents && recents.map((recent) =>
         <div className={`articleEntry ${recent.unread ? 'unread' : ''}`} key={recent.url} onClick={handleArticleClick(recent)}>
           <div className="articleContent">
-            <div className="title">{recent.title}</div>
+            <div className="title">{truncateTitle(recent.title)}</div>
             <div className="url">{new URL(recent.url).hostname}</div>
           </div>
           <div className="articleButtons">

@@ -23,6 +23,13 @@ const RecentPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const truncateTitle = (title: string, maxLength: number = 80): string => {
+    if (title.length <= maxLength) {
+      return title;
+    }
+    return title.substring(0, maxLength) + '...';
+  };
+
   // Color mode aware colors
   const onlineBg = useColorModeValue('#e8f5e8', '#2d4a2d');
   const offlineBg = useColorModeValue('#f5f5f5', '#2d2d2d');
@@ -223,7 +230,7 @@ const RecentPage: React.FC = () => {
               onClick={handleArticleClick(article)}
             >
               <div className="articleContent">
-                <div className="title">{article.title}</div>
+                <div className="title">{truncateTitle(article.title)}</div>
                 <div className="url">{new URL(article.url).hostname}</div>
               </div>
               <div className="articleButtons">
