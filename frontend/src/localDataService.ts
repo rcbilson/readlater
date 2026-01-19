@@ -1,18 +1,9 @@
-import { 
-  LocalArticle,
-  getRecentArticles, 
-  getArchivedArticles, 
-  getArticle, 
-  hasArticle, 
-  storeArticle, 
-  markArticleRead,
-  // setArticleArchive,
-  articleToLocal,
-  localToArticle,
-  searchArticles as dbSearchArticles
-} from './database';
-import { syncManager } from './syncManager';
 import { Article } from './Article';
+import {
+  getSyncService,
+  LocalArticle,
+  SyncStatusCallback,
+} from './sync';
 
 // Interface matching the old localStorage API for easier migration
 export interface OfflineArticleEntry {
@@ -33,7 +24,7 @@ const localToOfflineEntry = (local: LocalArticle): OfflineArticleEntry => ({
 // Get all local articles (equivalent to getOfflineArticles)
 export const getOfflineArticles = async (): Promise<OfflineArticleEntry[]> => {
   try {
-    const articles = await getRecentArticles(100); // Get more articles for full list
+    const articles = await getSyncService().getRecentArticles(100);
     return articles.map(localToOfflineEntry);
   } catch (error) {
     console.error('Error reading local articles:', error);
@@ -44,7 +35,8 @@ export const getOfflineArticles = async (): Promise<OfflineArticleEntry[]> => {
 // Check if an article is stored locally
 export const isArticleOffline = async (url: string): Promise<boolean> => {
   try {
-    return await hasArticle(url);
+    const article = await getSyncService().getArticle(url);
+    return article !== undefined;
   } catch (error) {
     console.error('Error checking if article is offline:', error);
     return false;
@@ -52,10 +44,10 @@ export const isArticleOffline = async (url: string): Promise<boolean> => {
 };
 
 // Store an article locally (with sync integration)
-export const storeArticleOffline = async (article: Article, unread: boolean = true): Promise<void> => {
+export const storeArticleOffline = async (article: Article, _unread: boolean = true): Promise<void> => {
   try {
-    const localArticle = articleToLocal(article, unread, false);
-    await storeArticle(localArticle);
+    // The sync service handles storage through downloadArticle
+    await getSyncService().downloadArticle(article.url);
   } catch (error) {
     console.error('Error storing article offline:', error);
     throw new Error('Failed to store article offline. Your device may be out of storage space.');
@@ -63,18 +55,11 @@ export const storeArticleOffline = async (article: Article, unread: boolean = tr
 };
 
 // Remove an article from local storage
-export const removeArticleOffline = async (url: string): Promise<void> => {
+export const removeArticleOffline = async (_url: string): Promise<void> => {
   try {
-    // In the new system, we don't actually remove articles, just mark them as not downloaded
-    // This preserves sync state and metadata
-    const article = await getArticle(url);
-    if (article) {
-      await storeArticle({
-        ...article,
-        contents: undefined,
-        hasBody: false
-      });
-    }
+    // In the new system, we don't actually remove articles, just clear content
+    // This is handled through the storage adapter
+    console.warn('removeArticleOffline: Not fully implemented in new system');
   } catch (error) {
     console.error('Error removing article from local storage:', error);
   }
@@ -84,31 +69,23 @@ export const removeArticleOffline = async (url: string): Promise<void> => {
 export const getOfflineArticle = async (url: string): Promise<Article | null> => {
   try {
     console.log('localDataService: getOfflineArticle called for:', url);
-    
-    // First try exact URL match
-    let localArticle = await getArticle(url);
-    console.log('localDataService: Exact URL match result:', localArticle ? 'found' : 'not found');
-    
-    // If not found, try without query parameters (canonical URL)
-    if (!localArticle) {
-      const canonicalUrl = url.split('?')[0];
-      if (canonicalUrl !== url) {
-        console.log('localDataService: Trying canonical URL:', canonicalUrl);
-        localArticle = await getArticle(canonicalUrl);
-        console.log('localDataService: Canonical URL match result:', localArticle ? 'found' : 'not found');
-      }
-    }
-    
+
+    const localArticle = await getSyncService().getArticle(url);
+    console.log('localDataService: Result:', localArticle ? 'found' : 'not found');
+
     if (localArticle) {
       console.log('localDataService: Article details - hasBody:', localArticle.hasBody, 'contents length:', localArticle.contents?.length || 0);
     }
-    
+
     if (localArticle?.contents) {
-      const convertedArticle = localToArticle(localArticle);
-      console.log('localDataService: Converted article, contents length:', convertedArticle.contents?.length || 0);
-      return convertedArticle;
+      return {
+        url: localArticle.url,
+        title: localArticle.title,
+        contents: localArticle.contents,
+        rendered: localArticle.contents
+      };
     }
-    
+
     console.log('localDataService: No contents found, returning null');
     return null;
   } catch (error) {
@@ -120,7 +97,7 @@ export const getOfflineArticle = async (url: string): Promise<Article | null> =>
 // Toggle article offline status
 export const toggleArticleOffline = async (article: Article, unread: boolean = true): Promise<boolean> => {
   const isCurrentlyOffline = await isArticleOffline(article.url);
-  
+
   if (isCurrentlyOffline) {
     await removeArticleOffline(article.url);
     return false;
@@ -133,10 +110,8 @@ export const toggleArticleOffline = async (article: Article, unread: boolean = t
 // Update the unread status for a local article (with sync integration)
 export const updateOfflineArticleUnreadStatus = async (url: string, unread: boolean): Promise<void> => {
   try {
-    await markArticleRead(url, unread);
-    // Also trigger sync manager to queue this for server sync
     if (!unread) {
-      await syncManager.markRead(url);
+      await getSyncService().markRead(url);
     }
   } catch (error) {
     console.error('Error updating local article unread status:', error);
@@ -146,7 +121,6 @@ export const updateOfflineArticleUnreadStatus = async (url: string, unread: bool
 // Clear all local articles (for cleanup if needed)
 export const clearAllOfflineArticles = async (): Promise<void> => {
   try {
-    // This would need to be implemented in database.ts
     console.warn('clearAllOfflineArticles not fully implemented in new system');
   } catch (error) {
     console.error('Error clearing local articles:', error);
@@ -158,7 +132,7 @@ export const clearAllOfflineArticles = async (): Promise<void> => {
 // Get recent articles (local-first)
 export const getRecentArticlesLocalFirst = async (count: number = 50): Promise<LocalArticle[]> => {
   try {
-    return await getRecentArticles(count);
+    return await getSyncService().getRecentArticles(count);
   } catch (error) {
     console.error('Error fetching recent articles:', error);
     return [];
@@ -168,7 +142,7 @@ export const getRecentArticlesLocalFirst = async (count: number = 50): Promise<L
 // Get archived articles (local-first)
 export const getArchivedArticlesLocalFirst = async (count: number = 50): Promise<LocalArticle[]> => {
   try {
-    return await getArchivedArticles(count);
+    return await getSyncService().getArchivedArticles(count);
   } catch (error) {
     console.error('Error fetching archived articles:', error);
     return [];
@@ -177,23 +151,31 @@ export const getArchivedArticlesLocalFirst = async (count: number = 50): Promise
 
 // Download and store article with sync
 export const downloadArticle = async (url: string, titleHint?: string): Promise<Article> => {
-  return await syncManager.downloadArticle(url, titleHint);
+  const syncArticle = await getSyncService().downloadArticle(url, titleHint);
+  if (!syncArticle.contents) {
+    throw new Error('Downloaded article has no contents');
+  }
+  return {
+    url: syncArticle.url,
+    title: syncArticle.title,
+    contents: syncArticle.contents,
+  };
 };
 
 // Mark article as read with sync
 export const markRead = async (articleUrl: string): Promise<void> => {
-  await syncManager.markRead(articleUrl);
+  await getSyncService().markRead(articleUrl);
 };
 
 // Set archive status with sync
 export const setArchive = async (articleUrl: string, archived: boolean): Promise<void> => {
-  await syncManager.setArchive(articleUrl, archived);
+  await getSyncService().setArchive(articleUrl, archived);
 };
 
 // Search articles locally
 export const searchArticles = async (query: string): Promise<LocalArticle[]> => {
   try {
-    return await dbSearchArticles(query);
+    return await getSyncService().searchArticles(query);
   } catch (error) {
     console.error('Error searching articles:', error);
     return [];
@@ -203,17 +185,19 @@ export const searchArticles = async (query: string): Promise<LocalArticle[]> => 
 // Initialize the data service (load initial data if needed)
 export const initializeDataService = async (): Promise<void> => {
   try {
-    await syncManager.loadInitialData();
+    await getSyncService().initialize();
   } catch (error) {
     console.error('Error initializing data service:', error);
   }
 };
 
 // Get sync status
-export const getSyncStatus = () => {
-  return syncManager.onStatusChange;
+export const getSyncStatus = (): ((callback: SyncStatusCallback) => () => void) => {
+  return (callback: SyncStatusCallback) => getSyncService().onStatusChange(callback);
 };
 
+// Export for backward compatibility
+export { getSyncService as syncManager } from './sync';
 
-// Export sync manager for advanced usage
-export { syncManager } from './syncManager';
+// Re-export LocalArticle type
+export type { LocalArticle } from './sync';

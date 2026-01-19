@@ -5,7 +5,7 @@ import axios from "axios";
 import { AuthContext } from "@/components/ui/auth-context";
 import { useQueryClient } from '@tanstack/react-query';
 import { ArticleRequest } from './Article';
-import { syncManager } from './syncManager';
+import { getSyncService } from './sync';
 
 const useDoAdd = () => {
   const navigate = useNavigate();
@@ -22,10 +22,11 @@ const useDoAdd = () => {
             type: "success",
         });
         queryClient.invalidateQueries({ queryKey: ['articleList'] })
-        
-        // Trigger sync to ensure new article appears in RecentPage
-        await syncManager.performFullSync();
-        
+
+        // Force sync to ensure new article appears in RecentPage
+        // Uses forceSyncNow to bypass rate limiting after adding
+        await getSyncService().forceSyncNow();
+
         navigate("/recent", { replace: true });
     } catch (e) {
         toaster.create({

@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check": "tsc -b && eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.0",
@@ -35,6 +38,7 @@
     "@types/react-dom": "^19.2.0",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^4.0.17",
     "eslint": "^9.37.0",
     "eslint-plugin-react-hooks": "^6.1.1",
     "eslint-plugin-react-refresh": "^0.4.23",
@@ -43,6 +47,7 @@
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.9",
     "vite-plugin-pwa": "^1.0.3",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.0.17"
   }
 }

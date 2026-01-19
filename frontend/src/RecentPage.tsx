@@ -3,22 +3,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { LuBookmark, LuDownload, LuLoader, LuWifi, LuWifiOff } from "react-icons/lu";
 
-import { LocalArticle, getRecentArticles } from "./database";
-import { syncManager, SyncStatus } from "./syncManager";
+import { getSyncService, LocalArticle, SyncStatus } from "./sync";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 import { useMarkAsRead } from "./useMarkAsRead";
-// import { useToggleArchive } from "./useToggleArchive";
 
 const RecentPage: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useNetworkStatus();
   const markAsRead = useMarkAsRead();
-  // const toggleArchive = useToggleArchive(); // Not needed in new implementation
   const [articles, setArticles] = useState<LocalArticle[]>([]);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+    state: 'idle',
     isOnline: false,
-    isSyncing: false,
     pendingOperations: 0
   });
   const [loading, setLoading] = useState(true);
@@ -41,7 +38,8 @@ const RecentPage: React.FC = () => {
     const loadArticles = async () => {
       try {
         console.log('RecentPage: Loading articles from local database...');
-        const localArticles = await getRecentArticles(50);
+        const syncService = getSyncService();
+        const localArticles = await syncService.getRecentArticles(50);
         console.log('RecentPage: Retrieved', localArticles.length, 'articles from database');
         const unarchivedArticles = localArticles.filter(a => !a.archived);
         console.log('RecentPage: Filtered to', unarchivedArticles.length, 'unarchived articles');
@@ -58,42 +56,48 @@ const RecentPage: React.FC = () => {
 
   // Subscribe to sync status
   useEffect(() => {
-    const unsubscribe = syncManager.onStatusChange(setSyncStatus);
+    const syncService = getSyncService();
+    const unsubscribe = syncService.onStatusChange((status) => {
+      setSyncStatus(status);
+    });
     return unsubscribe;
   }, []);
 
   // Trigger sync when coming online
   useEffect(() => {
     if (isOnline) {
-      syncManager.performFullSync().catch(console.error);
+      const syncService = getSyncService();
+      syncService.requestSync().catch(console.error);
     }
   }, [isOnline]);
 
-  // Refresh articles after sync operations and when sync status changes
+  // Refresh articles after sync operations
   useEffect(() => {
-    if (!syncStatus.isSyncing) {
+    if (syncStatus.state !== 'syncing') {
       const refreshArticles = async () => {
         console.log('RecentPage: Refreshing articles after sync...');
-        const localArticles = await getRecentArticles(50);
+        const syncService = getSyncService();
+        const localArticles = await syncService.getRecentArticles(50);
         const unarchivedArticles = localArticles.filter(a => !a.archived);
         console.log('RecentPage: Refreshed to', unarchivedArticles.length, 'unarchived articles');
         setArticles(unarchivedArticles);
       };
       refreshArticles().catch(console.error);
     }
-  }, [syncStatus.isSyncing, syncStatus.pendingOperations]);
+  }, [syncStatus.state, syncStatus.pendingOperations]);
 
   // Periodic refresh to catch any missed sync updates
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (!syncStatus.isSyncing) {
+      if (syncStatus.state !== 'syncing') {
         console.log('RecentPage: Periodic refresh check...');
-        const localArticles = await getRecentArticles(50);
+        const syncService = getSyncService();
+        const localArticles = await syncService.getRecentArticles(50);
         const unarchivedArticles = localArticles.filter(a => !a.archived);
-        
+
         // Only update if the article count or URLs have changed
-        if (unarchivedArticles.length !== articles.length || 
-            !unarchivedArticles.every((article, index) => 
+        if (unarchivedArticles.length !== articles.length ||
+            !unarchivedArticles.every((article, index) =>
               articles[index] && articles[index].url === article.url
             )) {
           console.log('RecentPage: Detected changes during periodic refresh, updating...');
@@ -103,13 +107,13 @@ const RecentPage: React.FC = () => {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [articles, syncStatus.isSyncing]);
+  }, [articles, syncStatus.state]);
 
   const handleArticleClick = (article: LocalArticle) => {
     return async () => {
       // Mark article as read regardless of whether it has body or not
       await markAsRead(article.url);
-      
+
       const encodedUrl = encodeURIComponent(article.url);
       if (article.hasBody) {
         navigate("/show/" + encodedUrl);
@@ -122,9 +126,10 @@ const RecentPage: React.FC = () => {
   const handleArchiveClick = (article: LocalArticle) => {
     return async (e: React.MouseEvent) => {
       e.stopPropagation();
-      
+
       try {
-        await syncManager.setArchive(article.url, true);
+        const syncService = getSyncService();
+        await syncService.setArchive(article.url, true);
         // Remove from UI immediately (optimistic update)
         setArticles(prev => prev.filter(a => a.url !== article.url));
       } catch (error) {
@@ -136,18 +141,19 @@ const RecentPage: React.FC = () => {
   const handleDownloadClick = (article: LocalArticle) => {
     return async (e: React.MouseEvent) => {
       e.stopPropagation();
-      
+
       try {
+        const syncService = getSyncService();
         if (article.hasBody) {
           // Remove content (make it not downloaded)
-          setArticles(prev => prev.map(a => 
+          setArticles(prev => prev.map(a =>
             a.url === article.url ? { ...a, hasBody: false, contents: undefined } : a
           ));
         } else {
           // Download content
-          await syncManager.downloadArticle(article.url);
+          await syncService.downloadArticle(article.url);
           // Update UI
-          setArticles(prev => prev.map(a => 
+          setArticles(prev => prev.map(a =>
             a.url === article.url ? { ...a, hasBody: true } : a
           ));
         }
@@ -166,21 +172,24 @@ const RecentPage: React.FC = () => {
     );
   }
 
+  const isSyncing = syncStatus.state === 'syncing';
+  const lastSyncTime = syncStatus.lastSyncTime;
+
   return (
     <div id="recentContainer">
       {/* Sync Status Bar */}
-      <div style={{ 
-        padding: '0.5em', 
-        background: syncStatus.isOnline ? onlineBg : offlineBg, 
+      <div style={{
+        padding: '0.5em',
+        background: syncStatus.isOnline ? onlineBg : offlineBg,
         color: textColor,
-        marginBottom: '1em', 
+        marginBottom: '1em',
         borderRadius: '4px',
         display: 'flex',
         alignItems: 'center',
         gap: '0.5em'
       }}>
         {syncStatus.isOnline ? <LuWifi /> : <LuWifiOff />}
-        {syncStatus.isSyncing ? (
+        {isSyncing ? (
           <>
             <LuLoader className="animate-spin" />
             Syncing...
@@ -188,9 +197,9 @@ const RecentPage: React.FC = () => {
         ) : syncStatus.isOnline ? (
           <>
             Online
-            {syncStatus.lastSyncTime && (
+            {lastSyncTime && (
               <span style={{ marginLeft: '0.5em', fontSize: '0.9em', color: mutedTextColor }}>
-                Last sync: {syncStatus.lastSyncTime.toLocaleTimeString()}
+                Last sync: {lastSyncTime.toLocaleTimeString()}
               </span>
             )}
           </>
@@ -200,6 +209,11 @@ const RecentPage: React.FC = () => {
         {syncStatus.pendingOperations > 0 && (
           <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: mutedTextColor }}>
             {syncStatus.pendingOperations} pending
+          </span>
+        )}
+        {syncStatus.error && (
+          <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: '#d32f2f' }}>
+            Error: {syncStatus.error}
           </span>
         )}
       </div>
@@ -224,9 +238,9 @@ const RecentPage: React.FC = () => {
           </div>
         ) : (
           articles.map((article) => (
-            <div 
-              className={`articleEntry ${article.unread ? 'unread' : ''}`} 
-              key={article.url} 
+            <div
+              className={`articleEntry ${article.unread ? 'unread' : ''}`}
+              key={article.url}
               onClick={handleArticleClick(article)}
             >
               <div className="articleContent">
@@ -234,15 +248,15 @@ const RecentPage: React.FC = () => {
                 <div className="url">{new URL(article.url).hostname}</div>
               </div>
               <div className="articleButtons">
-                <div 
+                <div
                   className={`downloadButton ${article.hasBody ? 'downloaded' : ''}`}
                   onClick={handleDownloadClick(article)}
                   title={article.hasBody ? 'Remove download' : 'Download for offline'}
                 >
                   <LuDownload />
                 </div>
-                <div 
-                  className="archiveButton" 
+                <div
+                  className="archiveButton"
                   onClick={handleArchiveClick(article)}
                   title="Archive article"
                 >
