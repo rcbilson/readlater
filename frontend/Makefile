@@ -1,6 +1,6 @@
 check:
-	yarn run check
+	npm run check
 
 check-full:
 	ctags -R --exclude=node_modules --exclude=dist
-	yarn run check
+	npm run check

@@ -14,10 +14,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM node:25 AS build-frontend
 WORKDIR /src
-COPY frontend/package.json frontend/yarn.lock .
-RUN yarn config set network-timeout 300000 && yarn install
+COPY frontend/package.json frontend/package-lock.json .
+RUN npm ci
 COPY frontend .
-RUN yarnpkg run build
+RUN npm run build
 
 FROM alpine:latest
 RUN apk update && apk add sqlite curl

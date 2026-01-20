@@ -15,11 +15,11 @@ backend:
 
 .PHONY: frontend
 frontend:
-	cd frontend && yarn dev
+	cd frontend && npm run dev
 
 .PHONY: upgrade-frontend
 upgrade-frontend:
-	cd frontend && yarn upgrade --latest
+	cd frontend && npm update
 
 .PHONY: upgrade-backend
 upgrade-backend:
