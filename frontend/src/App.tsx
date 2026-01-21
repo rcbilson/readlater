@@ -16,7 +16,7 @@ import ErrorPage from "./ErrorPage.jsx";
 import ShowPage from "./ShowPage.tsx";
 import MainPage from "./MainPage.tsx";
 import ShareTarget from "./ShareTarget.tsx";
-import { syncManager } from "./syncManager";
+import { initializeSyncService, getSyncService } from "./sync";
 
 const router = createBrowserRouter([
   {
@@ -54,12 +54,12 @@ const queryClient = new QueryClient()
 // App initialization component
 function AppWithSync() {
   useEffect(() => {
-    // Initialize sync manager on app startup
-    syncManager.loadInitialData().catch(console.error);
-    
+    // Initialize sync service on app startup
+    initializeSyncService().catch(console.error);
+
     // Cleanup on unmount
     return () => {
-      syncManager.destroy();
+      getSyncService().destroy();
     };
   }, []);
 

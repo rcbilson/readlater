@@ -14,7 +14,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { Article, ArticleRequest } from './Article';
 import { getOfflineArticle } from './localDataService';
 import { useNetworkStatus } from './useNetworkStatus';
-import { syncManager } from './syncManager';
+import { getSyncService } from './sync';
 import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 import "./Article.css";
 
@@ -134,10 +134,10 @@ const MainPage: React.FC = () => {
 
   const handleArchiveClick = async () => {
     if (!articleUrl || archiving) return;
-    
+
     setArchiving(true);
     try {
-      await syncManager.setArchive(articleUrl, true);
+      await getSyncService().setArchive(articleUrl, true);
       navigate(-1);
     } catch (error) {
       console.error('Failed to archive article:', error);
