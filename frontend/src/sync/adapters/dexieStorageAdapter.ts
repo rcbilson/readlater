@@ -40,15 +40,15 @@ export class DexieStorageAdapter implements StoragePort {
   }
 
   async getArticleByCanonicalUrl(canonicalUrl: string): Promise<LocalArticle | undefined> {
-    // First try exact match
+    // First try exact match on primary key
     const exact = await this.db.articles.get(canonicalUrl);
     if (exact) return exact;
 
-    // Search for articles where the canonical form matches
-    const allArticles = await this.db.articles.toArray();
-    return allArticles.find(
-      (article) => canonicalizeUrl(article.url) === canonicalUrl
-    );
+    // Use filter with first() to stop at the first match
+    // This avoids loading all articles into memory
+    return this.db.articles
+      .filter((article) => canonicalizeUrl(article.url) === canonicalUrl)
+      .first();
   }
 
   async storeArticle(article: LocalArticle): Promise<void> {
