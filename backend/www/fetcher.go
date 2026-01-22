@@ -8,13 +8,18 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type FetcherFunc func(ctx context.Context, url string) ([]byte, string, error)
 
-func doFetch(ctx context.Context, req *http.Request) ([]byte, string, error) {
-	var httpClient http.Client
+// httpClient is a shared HTTP client with timeout configuration
+// to prevent requests from hanging indefinitely
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
 
+func doFetch(ctx context.Context, req *http.Request) ([]byte, string, error) {
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, "", err
