@@ -107,8 +107,8 @@ func search(db Repo) AuthHandlerFunc {
 			logError(w, fmt.Sprintf("Error searching articles: %v", err), http.StatusInternalServerError)
 			return
 		}
-		json.NewEncoder(w).Encode(list)
 		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(list)
 	}
 }
 
@@ -129,8 +129,8 @@ func fetchRecents(db Repo) AuthHandlerFunc {
 			logError(w, fmt.Sprintf("Error fetching recent articles: %v", err), http.StatusInternalServerError)
 			return
 		}
-		json.NewEncoder(w).Encode(recentList)
 		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(recentList)
 	}
 }
 
@@ -177,8 +177,8 @@ func fetchArchive(db Repo) AuthHandlerFunc {
 			logError(w, fmt.Sprintf("Error fetching favorite articles: %v", err), http.StatusInternalServerError)
 			return
 		}
-		json.NewEncoder(w).Encode(recentList)
 		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(recentList)
 	}
 }
 
@@ -313,8 +313,8 @@ func fetchChanges(db Repo) AuthHandlerFunc {
 		since := r.URL.Query().Get("since")
 		if since == "" {
 			// If no timestamp provided, return empty list
-			json.NewEncoder(w).Encode(articleList{})
 			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(articleList{})
 			return
 		}
 
@@ -324,8 +324,8 @@ func fetchChanges(db Repo) AuthHandlerFunc {
 			return
 		}
 
-		json.NewEncoder(w).Encode(changesList)
 		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(changesList)
 	}
 }
 
