@@ -174,6 +174,27 @@ export class SyncExecutor {
   }
 
   /**
+   * Remove downloaded content from an article (local-only operation)
+   * This frees up IndexedDB storage without affecting server state
+   */
+  async removeContent(url: string): Promise<void> {
+    const article = await this.storage.getArticle(url);
+    if (!article) {
+      console.log(`SyncExecutor: Article not found for content removal: ${url}`);
+      return;
+    }
+
+    // Update article to remove content
+    const updated: LocalArticle = {
+      ...article,
+      contents: undefined,
+      hasBody: false,
+    };
+    await this.storage.storeArticle(updated);
+    console.log(`SyncExecutor: Removed content for ${url}`);
+  }
+
+  /**
    * Set archive status for an article
    */
   async setArchive(url: string, archived: boolean): Promise<void> {

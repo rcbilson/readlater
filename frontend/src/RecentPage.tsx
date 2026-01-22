@@ -145,7 +145,9 @@ const RecentPage: React.FC = () => {
       try {
         const syncService = getSyncService();
         if (article.hasBody) {
-          // Remove content (make it not downloaded)
+          // Remove content from IndexedDB
+          await syncService.removeContent(article.url);
+          // Update UI (optimistic update after successful removal)
           setArticles(prev => prev.map(a =>
             a.url === article.url ? { ...a, hasBody: false, contents: undefined } : a
           ));

@@ -129,6 +129,14 @@ export class SyncService {
   }
 
   /**
+   * Remove downloaded content from an article
+   * This frees up local storage without affecting server state
+   */
+  async removeContent(url: string): Promise<void> {
+    await this.executor.removeContent(url);
+  }
+
+  /**
    * Get current sync status
    */
   getStatus(): SyncStatus {
