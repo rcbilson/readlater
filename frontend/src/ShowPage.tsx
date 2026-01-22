@@ -79,9 +79,9 @@ const MainPage: React.FC = () => {
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
         resetAuth();
-      } else {
-        throw error;
+        throw new Error("Authentication required. Please log in again.");
       }
+      throw error;
     }
   };
 
