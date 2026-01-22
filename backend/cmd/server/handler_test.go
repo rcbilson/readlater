@@ -104,6 +104,45 @@ func setArchiveTest(t *testing.T, db Repo, url string, archived bool) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
+// TestSummarizeSSRFProtection tests that the summarize handler blocks SSRF attempts
+func TestSummarizeSSRFProtection(t *testing.T) {
+	// These tests don't need a database since they should fail at URL validation
+	ssrfURLs := []struct {
+		name string
+		url  string
+	}{
+		{"localhost", "http://localhost/admin"},
+		{"loopback", "http://127.0.0.1/"},
+		{"private 10.x", "http://10.0.0.1/internal"},
+		{"private 192.168.x", "http://192.168.1.1/router"},
+		{"cloud metadata", "http://169.254.169.254/latest/meta-data/"},
+		{"file scheme", "file:///etc/passwd"},
+	}
+
+	// Use a zero-value Repo - it won't be accessed since we'll fail at URL validation
+	var db Repo
+
+	for _, tc := range ssrfURLs {
+		t.Run(tc.name, func(t *testing.T) {
+			var reqData struct {
+				Url string `json:"url"`
+			}
+			reqData.Url = tc.url
+			data, err := json.Marshal(reqData)
+			assert.NilError(t, err)
+			req := httptest.NewRequest(http.MethodPost, "/summarize", bytes.NewReader(data))
+			w := httptest.NewRecorder()
+			// The db and fetcher won't be reached since URL validation fails first
+			summarize(mockSummarizer, db, mockFetcher)(w, req, User("test@example.com"))
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			// Should get a 400 Bad Request for blocked URLs
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		})
+	}
+}
+
 // TODO: test something other than the happy path
 func TestHandlers(t *testing.T) {
 	db, err := NewTestRepo()

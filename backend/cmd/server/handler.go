@@ -230,6 +230,11 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			logError(w, fmt.Sprintf("Invalid URL: %v", err), http.StatusBadRequest)
 			return
 		}
+		// Validate URL to prevent SSRF attacks
+		if err := www.ValidateURLForFetch(req.Url); err != nil {
+			logError(w, fmt.Sprintf("URL not allowed: %v", err), http.StatusBadRequest)
+			return
+		}
 		// First try to get article using original URL
 		article, ok := db.GetWithoutUpdating(ctx, req.Url)
 		var finalURL string
