@@ -21,7 +21,6 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           onSuccess={credentialResponse => {
             if (credentialResponse.credential) {
               setToken(credentialResponse.credential);
-              Cookies.set("auth_token", credentialResponse.credential, { sameSite: 'Strict', secure: true });
             }
           }}
           onError={() => {
