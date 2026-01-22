@@ -16,9 +16,10 @@ export function Provider(props: ColorModeProviderProps) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   // Wrapper that persists token to cookie when set
+  // Cookie expires in 7 days - actual JWT expiry will trigger re-auth if needed
   const setToken = (newToken: string | null) => {
     if (newToken) {
-      Cookies.set("auth_token", newToken, { sameSite: 'Strict', secure: true });
+      Cookies.set("auth_token", newToken, { sameSite: 'Strict', secure: true, expires: 7 });
     } else {
       Cookies.remove("auth_token");
     }
