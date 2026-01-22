@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { LuBookmark, LuDownload, LuLoader, LuWifi, LuWifiOff } from "react-icons/lu";
 
-import { getSyncService, LocalArticle, SyncStatus } from "./sync";
+import { getSyncService, LocalArticle, SyncStatus, getHostname } from "./sync";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 import { useMarkAsRead } from "./useMarkAsRead";
@@ -262,7 +262,7 @@ const RecentPage: React.FC = () => {
             >
               <div className="articleContent">
                 <div className="title">{truncateTitle(article.title)}</div>
-                <div className="url">{new URL(article.url).hostname}</div>
+                <div className="url">{getHostname(article.url)}</div>
               </div>
               <div className="articleButtons">
                 <div
