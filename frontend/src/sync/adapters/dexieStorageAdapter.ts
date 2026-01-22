@@ -12,7 +12,6 @@ interface SyncMetadata {
 }
 
 // Define the database schema
-// Uses the same database name as the existing database.ts for compatibility
 class SyncDatabase extends Dexie {
   articles!: EntityTable<LocalArticle, 'url'>;
   syncQueue!: EntityTable<SyncQueueItem, 'id'>;
