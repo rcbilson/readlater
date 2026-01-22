@@ -10,8 +10,6 @@ import (
 	"strconv"
 
 	"github.com/rcbilson/readlater/www"
-
-	_ "net/http/pprof"
 )
 
 type articleEntry struct {
