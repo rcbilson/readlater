@@ -140,16 +140,27 @@ export class DexieStorageAdapter implements StoragePort {
     });
   }
 
-  async searchArticles(query: string): Promise<LocalArticle[]> {
+  async searchArticles(query: string, limit: number = 50): Promise<LocalArticle[]> {
     const lowerQuery = query.toLowerCase();
-    const allArticles = await this.db.articles.toArray();
+    const results: LocalArticle[] = [];
 
-    return allArticles.filter(
-      (article) =>
+    // Use cursor to iterate without loading all into memory
+    await this.db.articles.each((article) => {
+      if (results.length >= limit) {
+        return; // Stop processing more articles once we have enough
+      }
+
+      const matches =
         article.title.toLowerCase().includes(lowerQuery) ||
         article.url.toLowerCase().includes(lowerQuery) ||
-        article.contents?.toLowerCase().includes(lowerQuery)
-    );
+        article.contents?.toLowerCase().includes(lowerQuery);
+
+      if (matches) {
+        results.push(article);
+      }
+    });
+
+    return results;
   }
 
   async transaction<T>(mode: 'r' | 'rw', fn: () => Promise<T>): Promise<T> {

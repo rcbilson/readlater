@@ -153,14 +153,16 @@ export class MockStorageAdapter implements StoragePort {
     this.state.lastSyncTimestamp = timestamp || new Date().toISOString();
   }
 
-  async searchArticles(query: string): Promise<LocalArticle[]> {
+  async searchArticles(query: string, limit: number = 50): Promise<LocalArticle[]> {
     const lowerQuery = query.toLowerCase();
-    return Array.from(this.state.articles.values()).filter(
-      (article) =>
-        article.title.toLowerCase().includes(lowerQuery) ||
-        article.url.toLowerCase().includes(lowerQuery) ||
-        article.contents?.toLowerCase().includes(lowerQuery)
-    );
+    return Array.from(this.state.articles.values())
+      .filter(
+        (article) =>
+          article.title.toLowerCase().includes(lowerQuery) ||
+          article.url.toLowerCase().includes(lowerQuery) ||
+          article.contents?.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, limit);
   }
 
   async transaction<T>(_mode: 'r' | 'rw', fn: () => Promise<T>): Promise<T> {

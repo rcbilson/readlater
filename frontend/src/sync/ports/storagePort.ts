@@ -31,7 +31,7 @@ export interface StoragePort {
   updateLastSyncTimestamp(timestamp?: string): Promise<void>;
 
   // Search
-  searchArticles(query: string): Promise<LocalArticle[]>;
+  searchArticles(query: string, limit?: number): Promise<LocalArticle[]>;
 
   // Transaction support
   transaction<T>(mode: 'r' | 'rw', fn: () => Promise<T>): Promise<T>;
