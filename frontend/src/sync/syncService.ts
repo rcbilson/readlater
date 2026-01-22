@@ -36,6 +36,7 @@ export class SyncService {
   private config: SyncServiceConfig;
   private cancelPeriodicSync?: () => void;
   private cancelVisibilityHandler?: () => void;
+  private cancelPendingVisibilitySync?: () => void;
   private initialized: boolean = false;
 
   constructor(
@@ -183,6 +184,9 @@ export class SyncService {
     if (this.cancelVisibilityHandler) {
       this.cancelVisibilityHandler();
     }
+    if (this.cancelPendingVisibilitySync) {
+      this.cancelPendingVisibilitySync();
+    }
     this.coordinator.destroy();
   }
 
@@ -199,18 +203,36 @@ export class SyncService {
     // Sync when page becomes visible
     this.cancelVisibilityHandler = this.scheduler.onVisibilityChange((visible) => {
       if (visible) {
+        // Clean up any existing pending sync handlers first
+        if (this.cancelPendingVisibilitySync) {
+          this.cancelPendingVisibilitySync();
+          this.cancelPendingVisibilitySync = undefined;
+        }
+
         // Small delay to avoid sync spam when switching tabs quickly
-        const cancel = this.scheduler.setTimeout(() => {
+        const cancelTimeout = this.scheduler.setTimeout(() => {
+          // Timeout fired - clean up the nested handler
+          if (unsubscribeNested) {
+            unsubscribeNested();
+          }
+          this.cancelPendingVisibilitySync = undefined;
           this.requestSync().catch(console.error);
         }, VISIBILITY_SYNC_DELAY_MS);
 
         // Cancel if we become hidden again
-        const unsubscribe = this.scheduler.onVisibilityChange((stillVisible) => {
+        const unsubscribeNested = this.scheduler.onVisibilityChange((stillVisible) => {
           if (!stillVisible) {
-            cancel();
-            unsubscribe();
+            cancelTimeout();
+            unsubscribeNested();
+            this.cancelPendingVisibilitySync = undefined;
           }
         });
+
+        // Store cleanup function for destroy()
+        this.cancelPendingVisibilitySync = () => {
+          cancelTimeout();
+          unsubscribeNested();
+        };
       }
     });
   }
