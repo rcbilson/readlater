@@ -1,5 +1,5 @@
 // A react component that displays recent articles using local-first architecture
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { LuBookmark, LuDownload, LuLoader, LuWifi, LuWifiOff } from "react-icons/lu";
 
@@ -71,22 +71,36 @@ const RecentPage: React.FC = () => {
     }
   }, [isOnline]);
 
-  // Refresh articles after sync operations
+  // Track previous sync state to detect when sync completes
+  const prevSyncState = useRef(syncStatus.state);
+
+  // Refresh articles function (memoized to avoid recreation)
+  const refreshArticles = useCallback(async () => {
+    console.log('RecentPage: Refreshing articles...');
+    const syncService = getSyncService();
+    const localArticles = await syncService.getRecentArticles(50);
+    const unarchivedArticles = localArticles.filter(a => !a.archived);
+    console.log('RecentPage: Refreshed to', unarchivedArticles.length, 'unarchived articles');
+    setArticles(unarchivedArticles);
+  }, []);
+
+  // Refresh articles only when sync completes (transitions from syncing to idle)
   useEffect(() => {
-    if (syncStatus.state !== 'syncing') {
-      const refreshArticles = async () => {
-        console.log('RecentPage: Refreshing articles after sync...');
-        const syncService = getSyncService();
-        const localArticles = await syncService.getRecentArticles(50);
-        const unarchivedArticles = localArticles.filter(a => !a.archived);
-        console.log('RecentPage: Refreshed to', unarchivedArticles.length, 'unarchived articles');
-        setArticles(unarchivedArticles);
-      };
+    const wassyncing = prevSyncState.current === 'syncing';
+    const isNowIdle = syncStatus.state === 'idle';
+    prevSyncState.current = syncStatus.state;
+
+    if (wassyncing && isNowIdle) {
+      console.log('RecentPage: Sync completed, refreshing articles');
       refreshArticles().catch(console.error);
     }
-  }, [syncStatus.state, syncStatus.pendingOperations]);
+  }, [syncStatus.state, refreshArticles]);
 
   // Periodic refresh to catch any missed sync updates
+  // Uses a ref to access current articles without causing effect recreation
+  const articlesRef = useRef(articles);
+  articlesRef.current = articles;
+
   useEffect(() => {
     const interval = setInterval(async () => {
       if (syncStatus.state !== 'syncing') {
@@ -94,11 +108,12 @@ const RecentPage: React.FC = () => {
         const syncService = getSyncService();
         const localArticles = await syncService.getRecentArticles(50);
         const unarchivedArticles = localArticles.filter(a => !a.archived);
+        const currentArticles = articlesRef.current;
 
         // Only update if the article count or URLs have changed
-        if (unarchivedArticles.length !== articles.length ||
+        if (unarchivedArticles.length !== currentArticles.length ||
             !unarchivedArticles.every((article, index) =>
-              articles[index] && articles[index].url === article.url
+              currentArticles[index] && currentArticles[index].url === article.url
             )) {
           console.log('RecentPage: Detected changes during periodic refresh, updating...');
           setArticles(unarchivedArticles);
@@ -107,7 +122,7 @@ const RecentPage: React.FC = () => {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [articles, syncStatus.state]);
+  }, [syncStatus.state]);
 
   const handleArticleClick = (article: LocalArticle) => {
     return async () => {
