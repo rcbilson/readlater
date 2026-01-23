@@ -148,18 +148,32 @@ func (repo *Repo) MarkRead(ctx context.Context, url string) error {
 	return err
 }
 
+// escapeFTS5Pattern escapes special characters for FTS5 queries.
+// FTS5 special characters: " * ( ) AND OR NOT NEAR
+// We escape by wrapping terms in double quotes and doubling any internal quotes.
+func escapeFTS5Pattern(pattern string) string {
+	// Escape double quotes by doubling them
+	escaped := strings.ReplaceAll(pattern, `"`, `""`)
+	// Wrap in double quotes for literal matching
+	return `"` + escaped + `"`
+}
+
 // Search for articles matching a pattern
 func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, error) {
 	if pattern == "" {
 		return nil, nil
 	}
-	// If the final token in the pattern is a letter, add a star to treat it as
-	// a prefix query
+
+	// Escape special characters for safe FTS5 query
+	escaped := escapeFTS5Pattern(pattern)
+
+	// If the final token in the pattern is a letter, add a star for prefix matching
+	// The star goes outside the quoted string in FTS5
 	lastRune, _ := utf8.DecodeLastRuneInString(pattern)
 	if unicode.IsLetter(lastRune) {
-		pattern += "*"
+		escaped += "*"
 	}
-	rows, err := repo.db.QueryContext(ctx, "SELECT a.title, a.url, (a.contents IS NOT NULL), a.unread, a.archived FROM fts INNER JOIN articles a ON fts.url = a.url WHERE fts MATCH ? ORDER BY rank", pattern)
+	rows, err := repo.db.QueryContext(ctx, "SELECT a.title, a.url, (a.contents IS NOT NULL), a.unread, a.archived FROM fts INNER JOIN articles a ON fts.url = a.url WHERE fts MATCH ? ORDER BY rank", escaped)
 	if err != nil {
 		return nil, err
 	}

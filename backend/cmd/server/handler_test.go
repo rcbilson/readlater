@@ -184,4 +184,13 @@ func TestHandlers(t *testing.T) {
 
 	// should have no search hits
 	searchTest(t, db, "foo", 0)
+
+	// Test that FTS5 special characters don't cause errors
+	// These should return 0 results but not panic or error
+	searchTest(t, db, `print("hello")`, 0)      // quotes
+	searchTest(t, db, `(parentheses)`, 0)       // parentheses
+	searchTest(t, db, `test*wildcard`, 0)       // asterisk
+	searchTest(t, db, `AND OR NOT NEAR`, 0)     // FTS5 keywords
+	searchTest(t, db, `"quoted phrase"`, 0)     // already quoted
+	searchTest(t, db, `user's apostrophe`, 0)   // apostrophe (safe but good to test)
 }
