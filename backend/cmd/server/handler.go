@@ -214,6 +214,9 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		ctx := r.Context()
 
+		// Limit request body size to prevent memory exhaustion attacks
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB limit
+
 		var req struct {
 			Url       string `json:"url"`
 			TitleHint string `json:"titleHint"`
@@ -332,6 +335,9 @@ func fetchChanges(db Repo) AuthHandlerFunc {
 func markRead(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, user User) {
 		ctx := r.Context()
+
+		// Limit request body size to prevent memory exhaustion attacks
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB limit
 
 		var req struct {
 			Url string `json:"url"`
