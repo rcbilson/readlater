@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 	"unicode"
@@ -10,6 +11,9 @@ import (
 
 	"github.com/rcbilson/readlater/sqlite"
 )
+
+// ErrArticleNotFound is returned when an operation targets a non-existent article
+var ErrArticleNotFound = errors.New("article not found")
 
 type Usage struct {
 	Url       string
@@ -132,20 +136,32 @@ func (repo *Repo) InsertWithTimestamp(ctx context.Context, art *article, created
 	return err
 }
 
-// Insert the article contents corresponding to the url into the database
+// SetArchive sets the archived status of an article by URL
 func (repo *Repo) SetArchive(ctx context.Context, url string, archive bool) error {
-	_, err := repo.db.ExecContext(ctx,
+	result, err := repo.db.ExecContext(ctx,
 		"UPDATE articles SET archived = ? WHERE url = ?",
 		archive, url)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := result.RowsAffected(); n == 0 {
+		return ErrArticleNotFound
+	}
+	return nil
 }
 
 // Mark an article as read by updating unread status and lastAccess time
 func (repo *Repo) MarkRead(ctx context.Context, url string) error {
-	_, err := repo.db.ExecContext(ctx,
+	result, err := repo.db.ExecContext(ctx,
 		"UPDATE articles SET unread = false, lastAccess = datetime('now') WHERE url = ?",
 		url)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := result.RowsAffected(); n == 0 {
+		return ErrArticleNotFound
+	}
+	return nil
 }
 
 // escapeFTS5Pattern escapes special characters for FTS5 queries.

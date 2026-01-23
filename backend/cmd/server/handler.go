@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -154,7 +155,11 @@ func setArchive(db Repo) AuthHandlerFunc {
 		}
 		err = db.SetArchive(r.Context(), url, archived)
 		if err != nil {
-			logError(w, fmt.Sprintf("Error setting archive status: %v", err), http.StatusInternalServerError)
+			if errors.Is(err, ErrArticleNotFound) {
+				logError(w, fmt.Sprintf("Article not found: %s", url), http.StatusNotFound)
+			} else {
+				logError(w, fmt.Sprintf("Error setting archive status: %v", err), http.StatusInternalServerError)
+			}
 			return
 		}
 	}
@@ -350,7 +355,11 @@ func markRead(db Repo) AuthHandlerFunc {
 
 		err = db.MarkRead(ctx, req.Url)
 		if err != nil {
-			logError(w, fmt.Sprintf("Error marking article as read: %v", err), http.StatusInternalServerError)
+			if errors.Is(err, ErrArticleNotFound) {
+				logError(w, fmt.Sprintf("Article not found: %s", req.Url), http.StatusNotFound)
+			} else {
+				logError(w, fmt.Sprintf("Error marking article as read: %v", err), http.StatusInternalServerError)
+			}
 			return
 		}
 
