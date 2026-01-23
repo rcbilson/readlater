@@ -96,7 +96,7 @@ func (repo *Repo) Recents(ctx context.Context, count int) (articleList, error) {
 // Returns the most frequently-accessed articles
 func (repo *Repo) Archive(ctx context.Context, count int) (articleList, error) {
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess FROM articles 
+		SELECT title, url, (contents IS NOT NULL AND length(contents) > 0), unread, archived, lastAccess FROM articles
 		ORDER BY created DESC LIMIT ?;`
 	rows, err := repo.db.QueryContext(ctx, query, count)
 	if err != nil {
@@ -173,7 +173,7 @@ func (repo *Repo) Search(ctx context.Context, pattern string) (articleList, erro
 	if unicode.IsLetter(lastRune) {
 		escaped += "*"
 	}
-	rows, err := repo.db.QueryContext(ctx, "SELECT a.title, a.url, (a.contents IS NOT NULL), a.unread, a.archived FROM fts INNER JOIN articles a ON fts.url = a.url WHERE fts MATCH ? ORDER BY rank", escaped)
+	rows, err := repo.db.QueryContext(ctx, "SELECT a.title, a.url, (a.contents IS NOT NULL AND length(a.contents) > 0), a.unread, a.archived FROM fts INNER JOIN articles a ON fts.url = a.url WHERE fts MATCH ? ORDER BY rank", escaped)
 	if err != nil {
 		return nil, err
 	}
@@ -211,9 +211,9 @@ func (repo *Repo) GetChangesSince(ctx context.Context, since string) (articleLis
 	}
 
 	query := `
-		SELECT title, url, (contents IS NOT NULL), unread, archived, lastAccess 
-		FROM articles 
-		WHERE lastModified > ? 
+		SELECT title, url, (contents IS NOT NULL AND length(contents) > 0), unread, archived, lastAccess
+		FROM articles
+		WHERE lastModified > ?
 		ORDER BY lastModified DESC`
 
 	rows, err := repo.db.QueryContext(ctx, query, sqliteSince)
