@@ -113,6 +113,9 @@ func search(db Repo) AuthHandlerFunc {
 	}
 }
 
+// maxCount is the maximum number of articles that can be requested in a single query
+const maxCount = 100
+
 func fetchRecents(db Repo) AuthHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, _ User) {
 		var err error
@@ -124,6 +127,9 @@ func fetchRecents(db Repo) AuthHandlerFunc {
 				logError(w, fmt.Sprintf("Invalid count specification: %s", countStr[0]), http.StatusBadRequest)
 				return
 			}
+		}
+		if count > maxCount {
+			count = maxCount
 		}
 		recentList, err := db.Recents(r.Context(), count)
 		if err != nil {
@@ -176,6 +182,9 @@ func fetchArchive(db Repo) AuthHandlerFunc {
 				logError(w, fmt.Sprintf("Invalid count specification: %s", countStr[0]), http.StatusBadRequest)
 				return
 			}
+		}
+		if count > maxCount {
+			count = maxCount
 		}
 		recentList, err := db.Archive(r.Context(), count)
 		if err != nil {
