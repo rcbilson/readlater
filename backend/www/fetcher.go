@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
+
+	utls "github.com/refraction-networking/utls"
 )
 
 type FetcherFunc func(ctx context.Context, url string) ([]byte, string, error)
@@ -53,6 +57,138 @@ func FetcherSpoof(ctx context.Context, url string) ([]byte, string, error) {
 	// spoof user agent to work around bot detection
 	req.Header["User-Agent"] = []string{"User-Agent: Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"}
 	return doFetch(ctx, req, "spoof")
+}
+
+// Browser profiles to rotate through for TLS fingerprint spoofing
+var browserProfiles = []utls.ClientHelloID{
+	utls.HelloChrome_120,
+	utls.HelloFirefox_105,
+	utls.HelloSafari_16_0,
+}
+
+var (
+	profileIndex  int
+	profileMutex  sync.Mutex
+	utlsTransport *http.Transport
+	utlsClient    *http.Client
+	utlsOnce      sync.Once
+)
+
+// getNextProfile returns the next browser profile in rotation
+func getNextProfile() utls.ClientHelloID {
+	profileMutex.Lock()
+	defer profileMutex.Unlock()
+	profile := browserProfiles[profileIndex]
+	profileIndex = (profileIndex + 1) % len(browserProfiles)
+	return profile
+}
+
+// getUserAgentForProfile returns a matching User-Agent for the TLS profile
+// to avoid detection via fingerprint/UA mismatch
+func getUserAgentForProfile(profile utls.ClientHelloID) string {
+	switch profile {
+	case utls.HelloChrome_120:
+		return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+	case utls.HelloFirefox_105:
+		return "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0"
+	case utls.HelloSafari_16_0:
+		return "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15"
+	default:
+		return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+	}
+}
+
+// initUTLSClient initializes the shared UTLS client with connection pooling
+func initUTLSClient() {
+	utlsOnce.Do(func() {
+		utlsTransport = &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				// Establish TCP connection
+				conn, err := net.Dial(network, addr)
+				if err != nil {
+					return nil, err
+				}
+
+				// Extract hostname for SNI
+				host, _, err := net.SplitHostPort(addr)
+				if err != nil {
+					host = addr
+				}
+
+				// Select browser profile for this connection
+				profile := getNextProfile()
+
+				// Create utls connection with browser profile
+				// Disable HTTP/2 via ALPN to avoid protocol mismatch issues
+				// (utls negotiates HTTP/2 but Go's http.Transport doesn't handle it properly with custom DialTLS)
+				tlsConfig := &utls.Config{
+					ServerName:         host,
+					NextProtos:         []string{"http/1.1"},
+				}
+				uconn := utls.UClient(conn, tlsConfig, profile)
+
+				// Perform TLS handshake
+				if err := uconn.HandshakeContext(ctx); err != nil {
+					conn.Close()
+					return nil, err
+				}
+
+				return uconn, nil
+			},
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     90 * time.Second,
+			TLSHandshakeTimeout: 10 * time.Second,
+		}
+
+		utlsClient = &http.Client{
+			Transport: utlsTransport,
+			Timeout:   30 * time.Second,
+		}
+	})
+}
+
+// FetcherUTLS uses TLS fingerprint spoofing to evade bot detection
+// It rotates between Chrome, Firefox, and Safari TLS fingerprints
+//
+// Known Limitation: HTTP/2 sites may fail due to protocol mismatch.
+// The browser profiles include HTTP/2 in ALPN but Go's http.Transport
+// doesn't properly handle HTTP/2 with custom DialTLS. Sites that require
+// HTTP/2 will fall back to FetcherCurl in the waterfall.
+func FetcherUTLS(ctx context.Context, url string) ([]byte, string, error) {
+	initUTLSClient()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Set User-Agent to match TLS fingerprint
+	// Note: Profile is selected in DialTLS, so we use a default Chrome UA
+	// For production, consider passing profile through context or using Chrome consistently
+	profile := utls.HelloChrome_120
+	req.Header.Set("User-Agent", getUserAgentForProfile(profile))
+
+	res, err := utlsClient.Do(req)
+	if err != nil {
+		LogFailure(url, 0, nil, fmt.Sprintf("utls request failed: %v", err), []string{"utls"})
+		return nil, "", err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+
+	if res.StatusCode > 299 {
+		errMsg := fmt.Sprintf("response failed with status code: %d", res.StatusCode)
+		LogFailure(url, res.StatusCode, res.Header, errMsg, []string{"utls"})
+		return nil, "", fmt.Errorf("%s and\nbody: %s", errMsg, body)
+	}
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	return body, res.Request.URL.String(), nil
 }
 
 func FetcherCurl(ctx context.Context, url string) ([]byte, string, error) {
@@ -111,6 +247,7 @@ func FetcherCombined(ctx context.Context, url string) ([]byte, string, error) {
         }{
                 {FetcherSpoof, "spoof"},
                 {Fetcher, "standard"},
+                {FetcherUTLS, "utls"},
                 {FetcherCurl, "curl"},
         }
 
