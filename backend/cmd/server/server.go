@@ -30,5 +30,12 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize structured failure logging
+	err = www.InitFailureLog("fail.log")
+	if err != nil {
+		log.Fatal("error initializing failure log:", err)
+	}
+	defer www.CloseFailureLog()
+
 	handler(summarizer, db, www.FetcherCombined, spec.Port, spec.FrontendPath, spec.GClientId)
 }
