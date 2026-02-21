@@ -132,9 +132,10 @@ const RecentPage: React.FC = () => {
       const encodedUrl = encodeURIComponent(article.url);
       if (article.hasBody) {
         navigate("/show/" + encodedUrl);
-      } else {
+      } else if (isOnline) {
         window.open(article.url, "_blank");
       }
+      // When offline without body, do nothing (article is not available)
     }
   };
 
@@ -156,6 +157,10 @@ const RecentPage: React.FC = () => {
   const handleDownloadClick = (article: LocalArticle) => {
     return async (e: React.MouseEvent) => {
       e.stopPropagation();
+
+      // When offline: don't allow downloading (requires network)
+      // and don't allow removing content (would lose offline access)
+      if (!isOnline) return;
 
       try {
         const syncService = getSyncService();
@@ -254,34 +259,41 @@ const RecentPage: React.FC = () => {
             )}
           </div>
         ) : (
-          articles.map((article) => (
-            <div
-              className={`articleEntry ${article.unread ? 'unread' : ''}`}
-              key={article.url}
-              onClick={handleArticleClick(article)}
-            >
-              <div className="articleContent">
-                <div className="title">{truncateTitle(article.title)}</div>
-                <div className="url">{getHostname(article.url)}</div>
-              </div>
-              <div className="articleButtons">
-                <div
-                  className={`downloadButton ${article.hasBody ? 'downloaded' : ''}`}
-                  onClick={handleDownloadClick(article)}
-                  title={article.hasBody ? 'Remove download' : 'Download for offline'}
-                >
-                  <LuDownload />
+          articles.map((article) => {
+            const availableOffline = article.hasBody;
+            const clickable = isOnline || availableOffline;
+
+            return (
+              <div
+                className={`articleEntry ${article.unread ? 'unread' : ''}`}
+                key={article.url}
+                onClick={handleArticleClick(article)}
+                style={{ opacity: clickable ? 1 : 0.5, cursor: clickable ? 'pointer' : 'default' }}
+              >
+                <div className="articleContent">
+                  <div className="title">{truncateTitle(article.title)}</div>
+                  <div className="url">{getHostname(article.url)}</div>
                 </div>
-                <div
-                  className="archiveButton"
-                  onClick={handleArchiveClick(article)}
-                  title="Archive article"
-                >
-                  <LuBookmark />
+                <div className="articleButtons">
+                  <div
+                    className={`downloadButton ${article.hasBody ? 'downloaded' : ''}`}
+                    onClick={handleDownloadClick(article)}
+                    title={!isOnline ? 'Offline' : article.hasBody ? 'Remove download' : 'Download for offline'}
+                    style={{ opacity: isOnline ? 1 : 0.5, cursor: isOnline ? 'pointer' : 'default' }}
+                  >
+                    <LuDownload />
+                  </div>
+                  <div
+                    className="archiveButton"
+                    onClick={handleArchiveClick(article)}
+                    title="Archive article"
+                  >
+                    <LuBookmark />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
