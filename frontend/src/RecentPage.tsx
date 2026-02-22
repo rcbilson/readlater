@@ -103,26 +103,24 @@ const RecentPage: React.FC = () => {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (syncStatus.state !== 'syncing') {
-        console.log('RecentPage: Periodic refresh check...');
-        const syncService = getSyncService();
-        const localArticles = await syncService.getRecentArticles(50);
-        const unarchivedArticles = localArticles.filter(a => !a.archived);
-        const currentArticles = articlesRef.current;
+      console.log('RecentPage: Periodic refresh check...');
+      const syncService = getSyncService();
+      const localArticles = await syncService.getRecentArticles(50);
+      const unarchivedArticles = localArticles.filter(a => !a.archived);
+      const currentArticles = articlesRef.current;
 
-        // Only update if the article count or URLs have changed
-        if (unarchivedArticles.length !== currentArticles.length ||
-            !unarchivedArticles.every((article, index) =>
-              currentArticles[index] && currentArticles[index].url === article.url
-            )) {
-          console.log('RecentPage: Detected changes during periodic refresh, updating...');
-          setArticles(unarchivedArticles);
-        }
+      // Only update if the article count or URLs have changed
+      if (unarchivedArticles.length !== currentArticles.length ||
+          !unarchivedArticles.every((article, index) =>
+            currentArticles[index] && currentArticles[index].url === article.url
+          )) {
+        console.log('RecentPage: Detected changes during periodic refresh, updating...');
+        setArticles(unarchivedArticles);
       }
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [syncStatus.state]);
+  }, []);
 
   const handleArticleClick = (article: LocalArticle) => {
     return async () => {

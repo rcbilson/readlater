@@ -70,14 +70,21 @@ export class SyncService {
   }
 
   /**
-   * Initialize the sync service and load initial data
+   * Initialize the sync service.
+   * Data loading happens via the coordinator's sync cycle
+   * (triggered by visibility handler / online status), not here,
+   * so the app can show cached articles immediately without
+   * blocking on a network request.
    */
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
     console.log('SyncService: Initializing');
-    await this.executor.loadInitialData();
     this.initialized = true;
+    // Kick off a sync in the background rather than blocking on loadInitialData().
+    // The coordinator handles rate-limiting and coalescing with any
+    // already-queued sync requests from the visibility handler.
+    this.requestSync().catch(console.error);
     console.log('SyncService: Initialized');
   }
 
