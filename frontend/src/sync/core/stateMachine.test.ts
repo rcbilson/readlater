@@ -115,12 +115,14 @@ describe('stateMachine', () => {
       lastError: 'Previous error',
     };
 
-    it('transitions to syncing on SYNC_REQUESTED', () => {
+    it('transitions to idle with pendingSync on SYNC_REQUESTED', () => {
       const event: SyncEvent = { type: 'SYNC_REQUESTED' };
       const newState = transition(errorState, event);
 
-      expect(newState.status).toBe('syncing');
+      expect(newState.status).toBe('idle');
+      expect(newState.pendingSync).toBe(true);
       expect(newState.retryScheduled).toBe(false);
+      expect(newState.lastError).toBeUndefined();
     });
 
     it('sets retryScheduled on RETRY_SCHEDULED', () => {

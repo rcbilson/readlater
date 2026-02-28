@@ -30,7 +30,7 @@ export function createInitialState(): SyncMachineState {
  *   OFFLINE -> offline (abort current sync)
  *
  * error:
- *   SYNC_REQUESTED -> syncing
+ *   SYNC_REQUESTED -> idle (with pending, so tryStartSync works)
  *   RETRY_SCHEDULED -> error (with retryScheduled=true)
  *   ONLINE -> idle (try again)
  *   OFFLINE -> offline
@@ -131,11 +131,15 @@ function transitionFromError(
 ): SyncMachineState {
   switch (event.type) {
     case 'SYNC_REQUESTED':
+      // Go to idle with pendingSync so tryStartSync() can properly
+      // call executeSync(). Going directly to 'syncing' caused a bug
+      // where tryStartSync() thought a sync was already running.
       return {
         ...state,
-        status: 'syncing',
-        pendingSync: false,
+        status: 'idle',
+        pendingSync: true,
         retryScheduled: false,
+        lastError: undefined,
       };
     case 'RETRY_SCHEDULED':
       return {

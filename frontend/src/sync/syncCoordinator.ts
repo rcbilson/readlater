@@ -16,6 +16,11 @@ import {
   isSyncing,
   hasPendingSync,
 } from './core/stateMachine';
+import {
+  calculateRetryDelay,
+  shouldRetry,
+  isRetryableError,
+} from './core/retryStrategy';
 
 export interface SyncCoordinatorConfig {
   minSyncInterval: number;
@@ -46,6 +51,8 @@ export class SyncCoordinator {
   private statusCallbacks: Set<SyncStatusCallback> = new Set();
   private pendingSyncCount: number = 0;
   private cancelScheduledSync?: () => void;
+  private cancelRetry?: () => void;
+  private retryAttempt: number = 0;
   private unsubscribeOnline?: () => void;
 
   constructor(
@@ -128,6 +135,9 @@ export class SyncCoordinator {
     if (this.cancelScheduledSync) {
       this.cancelScheduledSync();
     }
+    if (this.cancelRetry) {
+      this.cancelRetry();
+    }
     if (this.unsubscribeOnline) {
       this.unsubscribeOnline();
     }
@@ -206,8 +216,9 @@ export class SyncCoordinator {
       // Execute the actual sync
       await this.config.onSyncStart();
 
-      // Update last sync time
+      // Update last sync time and reset retry counter on success
       this.lastSyncTime = this.scheduler.now();
+      this.retryAttempt = 0;
 
       // Mark sync complete
       this.dispatch({ type: 'SYNC_COMPLETED' });
@@ -231,6 +242,17 @@ export class SyncCoordinator {
       const syncError = new Error(errorMessage);
       for (const request of requests) {
         request.reject(syncError);
+      }
+
+      // Schedule automatic retry for retryable errors
+      if (isRetryableError(error) && shouldRetry(this.retryAttempt)) {
+        const delay = calculateRetryDelay(this.retryAttempt);
+        this.retryAttempt++;
+        console.log(`SyncCoordinator: Scheduling retry #${this.retryAttempt} in ${delay}ms`);
+        this.cancelRetry = this.scheduler.setTimeout(() => {
+          this.cancelRetry = undefined;
+          this.requestSync().catch(console.error);
+        }, delay);
       }
     } finally {
       this.notifyStatusChange();
