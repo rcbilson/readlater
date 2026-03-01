@@ -125,12 +125,13 @@ export class SyncExecutor {
     // Fetch from server
     const article = await this.network.summarize(url, titleHint);
 
-    // Store locally
+    // Store locally - hasBody should reflect whether we actually got content
+    const hasBody = !!article.contents;
     const toStore: LocalArticle = {
       url: article.url,
       title: article.title,
-      contents: article.contents,
-      hasBody: true,
+      contents: hasBody ? article.contents : undefined,
+      hasBody,
       unread: true,
       archived: false,
       downloadedAt: Date.now(),
