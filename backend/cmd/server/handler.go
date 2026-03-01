@@ -258,7 +258,23 @@ func summarize(summarizer summarizeFunc, db Repo, fetcher www.FetcherFunc) AuthH
 			html, finalURLFromFetcher, err := fetcher(ctx, req.Url)
 			finalURL = finalURLFromFetcher
 			if err != nil {
-				// Fetch failed - add article with empty contents
+				// Fetch failed — try resolving redirects and fetching the destination URL.
+				// This handles tracking/redirect links (e.g. beehiiv) where the redirect
+				// service blocks bots but the destination site can be fetched normally.
+				log.Printf("Initial fetch failed for %s: %v - trying to resolve redirects", req.Url, err)
+				resolvedURL, resolveErr := www.ResolveRedirects(ctx, req.Url)
+				if resolveErr == nil && resolvedURL != req.Url {
+					if valErr := www.ValidateURLForFetch(resolvedURL); valErr == nil {
+						log.Printf("Resolved %s -> %s, retrying fetch", req.Url, resolvedURL)
+						html, finalURLFromFetcher, err = fetcher(ctx, resolvedURL)
+						if err == nil {
+							finalURL = finalURLFromFetcher
+						}
+					}
+				}
+			}
+			if err != nil {
+				// Fetch still failed - add article with empty contents
 				log.Printf("Error retrieving article %s: %v - adding with empty contents", req.Url, err)
 				canonicalURL, canonErr := canonicalizeURL(req.Url)
 				if canonErr != nil {

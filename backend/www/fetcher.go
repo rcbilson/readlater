@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"strings"
 	"sync"
@@ -20,6 +21,51 @@ type FetcherFunc func(ctx context.Context, url string) ([]byte, string, error)
 // to prevent requests from hanging indefinitely
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
+}
+
+// noFollowClient is used to resolve redirects one hop at a time
+var noFollowClient = &http.Client{
+	Timeout: 10 * time.Second,
+	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+}
+
+// ResolveRedirects follows HTTP redirects and returns the final URL.
+// Used when the main fetch fails on redirect/tracking URLs — we resolve
+// the redirect chain to get the destination URL and fetch that instead.
+func ResolveRedirects(ctx context.Context, rawURL string) (string, error) {
+	current := rawURL
+	for i := 0; i < 10; i++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, current, nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+		resp, err := noFollowClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+			loc := resp.Header.Get("Location")
+			if loc == "" {
+				return current, nil
+			}
+			// Handle relative redirects
+			base, _ := url.Parse(current)
+			ref, err := url.Parse(loc)
+			if err != nil {
+				return "", err
+			}
+			current = base.ResolveReference(ref).String()
+			continue
+		}
+		return current, nil
+	}
+	return "", fmt.Errorf("too many redirects resolving %s", rawURL)
 }
 
 func doFetch(ctx context.Context, req *http.Request, strategy string) ([]byte, string, error) {
