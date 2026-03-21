@@ -157,8 +157,8 @@ const MainPage: React.FC = () => {
         borderBottom: `1px solid ${borderColor}`,
         padding: '0.75rem 1rem',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: '0.5rem',
         zIndex: 100,
         marginBottom: '1rem'
       }}>
@@ -173,7 +173,8 @@ const MainPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             transition: 'background-color 0.2s',
-            color: textColor
+            color: textColor,
+            flexShrink: 0
           }}
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBgColor}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -181,7 +182,47 @@ const MainPage: React.FC = () => {
         >
           <LuArrowLeft size={24} />
         </button>
-        
+
+        {articleUrl && (
+          <a
+            href={articleUrl}
+            style={{
+              color: textColor,
+              textDecoration: 'none',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flexGrow: 1,
+              minWidth: 0
+            }}
+          >
+            {new URL(articleUrl).hostname}
+          </a>
+        )}
+
+        <button
+          onClick={handleLinkClick()}
+          disabled={!articleUrl}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: articleUrl ? 'pointer' : 'not-allowed',
+            padding: '0.5rem',
+            borderRadius: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            opacity: articleUrl ? 1 : 0.5,
+            transition: 'background-color 0.2s',
+            color: textColor,
+            flexShrink: 0
+          }}
+          onMouseEnter={(e) => articleUrl && (e.currentTarget.style.backgroundColor = hoverBgColor)}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label="Share article"
+        >
+          <LuShare2 size={24} />
+        </button>
+
         <button
           onClick={handleArchiveClick}
           disabled={archiving || !articleUrl}
@@ -195,7 +236,8 @@ const MainPage: React.FC = () => {
             alignItems: 'center',
             opacity: archiving || !articleUrl ? 0.5 : 1,
             transition: 'background-color 0.2s',
-            color: textColor
+            color: textColor,
+            flexShrink: 0
           }}
           onMouseEnter={(e) => !archiving && articleUrl && (e.currentTarget.style.backgroundColor = hoverBgColor)}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -209,17 +251,8 @@ const MainPage: React.FC = () => {
       {isPending && <div>We're loading this article, just a moment...</div>}
       {!isPending && !article && <div>We don't have a version of {articleLink}. You can see the original by clicking the link.</div>}
       {debug && article && <pre>{article.contents}</pre>}
-      {!debug && article?.rendered && 
+      {!debug && article?.rendered &&
         <div>
-          <div id="articleHeader">
-            <div id="titleBox">
-              {articleUrl && 
-                <span>
-                  <a id="url" href={articleUrl}>{new URL(articleUrl).hostname}</a>
-                  <LuShare2 onClick={handleLinkClick()} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '1em', cursor: 'pointer' }}/>
-                </span>}
-            </div>
-          </div>
           <ErrorBoundary
               fallback={<div>We weren't able to summarize {articleLink}. You can see the original by clicking the link.</div>}>
             <div className="article" dangerouslySetInnerHTML={{ __html: article.rendered }} />
