@@ -1,5 +1,3 @@
-@AGENTS.md
-
 ## Frontend Architecture: Local-First Principles
 
 The frontend is a local-first PWA. All UI must work offline with cached data. Follow these principles when modifying frontend code:
