@@ -49,5 +49,8 @@
     "vite-plugin-pwa": "^1.0.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.17"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.4"
   }
 }
