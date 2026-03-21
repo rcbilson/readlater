@@ -1,9 +1,9 @@
 // A react component that displays recent articles using local-first architecture
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
-import { LuBookmark, LuDownload, LuLoader, LuWifi, LuWifiOff } from "react-icons/lu";
+import { LuBookmark, LuDownload } from "react-icons/lu";
 
-import { getSyncService, LocalArticle, SyncStatus, getHostname } from "./sync";
+import { getSyncService, LocalArticle, getHostname, SyncState } from "./sync";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { useColorModeValue } from "@/components/ui/color-mode-hooks";
 import { useMarkAsRead } from "./useMarkAsRead";
@@ -13,12 +13,8 @@ const RecentPage: React.FC = () => {
   const isOnline = useNetworkStatus();
   const markAsRead = useMarkAsRead();
   const [articles, setArticles] = useState<LocalArticle[]>([]);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-    state: 'idle',
-    isOnline: false,
-    pendingOperations: 0
-  });
   const [loading, setLoading] = useState(true);
+  const [syncState, setSyncState] = useState<SyncState>('idle');
 
   const truncateTitle = (title: string, maxLength: number = 80): string => {
     if (title.length <= maxLength) {
@@ -28,9 +24,6 @@ const RecentPage: React.FC = () => {
   };
 
   // Color mode aware colors
-  const onlineBg = useColorModeValue('#e8f5e8', '#2d4a2d');
-  const offlineBg = useColorModeValue('#f5f5f5', '#2d2d2d');
-  const textColor = useColorModeValue('#000000', '#ffffff');
   const mutedTextColor = useColorModeValue('#666666', '#cccccc');
 
   // Load articles from local database
@@ -58,7 +51,7 @@ const RecentPage: React.FC = () => {
   useEffect(() => {
     const syncService = getSyncService();
     const unsubscribe = syncService.onStatusChange((status) => {
-      setSyncStatus(status);
+      setSyncState(status.state);
     });
     return unsubscribe;
   }, []);
@@ -72,7 +65,7 @@ const RecentPage: React.FC = () => {
   }, [isOnline]);
 
   // Track previous sync state to detect when sync completes
-  const prevSyncState = useRef(syncStatus.state);
+  const prevSyncState = useRef(syncState);
 
   // Refresh articles function (memoized to avoid recreation)
   const refreshArticles = useCallback(async () => {
@@ -87,14 +80,14 @@ const RecentPage: React.FC = () => {
   // Refresh articles only when sync completes (transitions from syncing to idle)
   useEffect(() => {
     const wassyncing = prevSyncState.current === 'syncing';
-    const isNowIdle = syncStatus.state === 'idle';
-    prevSyncState.current = syncStatus.state;
+    const isNowIdle = syncState === 'idle';
+    prevSyncState.current = syncState;
 
     if (wassyncing && isNowIdle) {
       console.log('RecentPage: Sync completed, refreshing articles');
       refreshArticles().catch(console.error);
-    }
-  }, [syncStatus.state, refreshArticles]);
+      }
+  }, [syncState, refreshArticles]);
 
   // Periodic refresh to catch any missed sync updates
   // Uses a ref to access current articles without causing effect recreation
@@ -186,58 +179,13 @@ const RecentPage: React.FC = () => {
   if (loading) {
     return (
       <div style={{ padding: '2em', textAlign: 'center' }}>
-        <LuLoader className="animate-spin" style={{ display: 'inline-block', marginRight: '0.5em' }} />
         Loading articles...
       </div>
     );
   }
 
-  const isSyncing = syncStatus.state === 'syncing';
-  const lastSyncTime = syncStatus.lastSyncTime;
-
   return (
     <div id="recentContainer">
-      {/* Sync Status Bar */}
-      <div style={{
-        padding: '0.5em',
-        background: syncStatus.isOnline ? onlineBg : offlineBg,
-        color: textColor,
-        marginBottom: '1em',
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5em'
-      }}>
-        {syncStatus.isOnline ? <LuWifi /> : <LuWifiOff />}
-        {isSyncing ? (
-          <>
-            <LuLoader className="animate-spin" />
-            Syncing...
-          </>
-        ) : syncStatus.isOnline ? (
-          <>
-            Online
-            {lastSyncTime && (
-              <span style={{ marginLeft: '0.5em', fontSize: '0.9em', color: mutedTextColor }}>
-                Last sync: {lastSyncTime.toLocaleTimeString()}
-              </span>
-            )}
-          </>
-        ) : (
-          'Offline - showing local articles'
-        )}
-        {syncStatus.pendingOperations > 0 && (
-          <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: mutedTextColor }}>
-            {syncStatus.pendingOperations} pending
-          </span>
-        )}
-        {syncStatus.error && (
-          <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: '#d32f2f' }}>
-            Error: {syncStatus.error}
-          </span>
-        )}
-      </div>
-
       {/* Articles List */}
       <div id="articleList">
         {articles.length === 0 ? (
