@@ -3,6 +3,7 @@ package www
 import (
 	"encoding/json"
 	"log"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -27,15 +28,15 @@ const (
 
 // FailureLog represents a structured log entry for fetch failures
 type FailureLog struct {
-	Timestamp            string              `json:"timestamp"`
-	URL                  string              `json:"url"`
-	Domain               string              `json:"domain"`
-	FailureCategory      FailureCategory     `json:"failure_category"`
-	HTTPStatus           int                 `json:"http_status,omitempty"`
-	StrategiesAttempted  []string            `json:"strategies_attempted"`
-	CloudflareMitigated  bool                `json:"cloudflare_mitigated"`
-	ErrorMessage         string              `json:"error_message"`
-	ResponseHeaders      map[string][]string `json:"response_headers,omitempty"`
+	Timestamp           string              `json:"timestamp"`
+	URL                 string              `json:"url"`
+	Domain              string              `json:"domain"`
+	FailureCategory     FailureCategory     `json:"failure_category"`
+	HTTPStatus          int                 `json:"http_status,omitempty"`
+	StrategiesAttempted []string            `json:"strategies_attempted"`
+	CloudflareMitigated bool                `json:"cloudflare_mitigated"`
+	ErrorMessage        string              `json:"error_message"`
+	ResponseHeaders     map[string][]string `json:"response_headers,omitempty"`
 }
 
 var (
@@ -83,28 +84,28 @@ func categorizeFailure(httpStatus int, headers http.Header, errMsg string) Failu
 
 	// Check for timeouts
 	if strings.Contains(strings.ToLower(errMsg), "timeout") ||
-	   strings.Contains(strings.ToLower(errMsg), "deadline exceeded") {
+		strings.Contains(strings.ToLower(errMsg), "deadline exceeded") {
 		return Timeout
 	}
 
 	// Check for redirect loops
 	if strings.Contains(strings.ToLower(errMsg), "redirect") &&
-	   (strings.Contains(strings.ToLower(errMsg), "stopped") ||
-	    strings.Contains(strings.ToLower(errMsg), "too many")) {
+		(strings.Contains(strings.ToLower(errMsg), "stopped") ||
+			strings.Contains(strings.ToLower(errMsg), "too many")) {
 		return RedirectLoop
 	}
 
 	// Check for network errors
 	if strings.Contains(strings.ToLower(errMsg), "connection") ||
-	   strings.Contains(strings.ToLower(errMsg), "network") ||
-	   strings.Contains(strings.ToLower(errMsg), "dns") ||
-	   strings.Contains(strings.ToLower(errMsg), "no such host") {
+		strings.Contains(strings.ToLower(errMsg), "network") ||
+		strings.Contains(strings.ToLower(errMsg), "dns") ||
+		strings.Contains(strings.ToLower(errMsg), "no such host") {
 		return NetworkError
 	}
 
 	// Check for URL parsing errors
 	if strings.Contains(strings.ToLower(errMsg), "invalid url") ||
-	   strings.Contains(strings.ToLower(errMsg), "parse") {
+		strings.Contains(strings.ToLower(errMsg), "parse") {
 		return InvalidURL
 	}
 
@@ -136,9 +137,7 @@ func LogFailure(urlStr string, httpStatus int, headers http.Header, errMsg strin
 	// Convert headers to map for JSON serialization
 	headerMap := make(map[string][]string)
 	if headers != nil {
-		for k, v := range headers {
-			headerMap[k] = v
-		}
+		maps.Copy(headerMap, headers)
 	}
 
 	entry := FailureLog{

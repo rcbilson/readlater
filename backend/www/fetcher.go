@@ -36,7 +36,7 @@ var noFollowClient = &http.Client{
 // the redirect chain to get the destination URL and fetch that instead.
 func ResolveRedirects(ctx context.Context, rawURL string) (string, error) {
 	current := rawURL
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		req, err := http.NewRequestWithContext(ctx, http.MethodHead, current, nil)
 		if err != nil {
 			return "", err
@@ -168,8 +168,8 @@ func initUTLSClient() {
 				// Disable HTTP/2 via ALPN to avoid protocol mismatch issues
 				// (utls negotiates HTTP/2 but Go's http.Transport doesn't handle it properly with custom DialTLS)
 				tlsConfig := &utls.Config{
-					ServerName:         host,
-					NextProtos:         []string{"http/1.1"},
+					ServerName: host,
+					NextProtos: []string{"http/1.1"},
 				}
 				uconn := utls.UClient(conn, tlsConfig, profile)
 
@@ -287,33 +287,33 @@ func FetcherCurl(ctx context.Context, url string) ([]byte, string, error) {
 }
 
 func FetcherCombined(ctx context.Context, url string) ([]byte, string, error) {
-        fetchers := []struct {
-                fn   FetcherFunc
-                name string
-        }{
-                {FetcherSpoof, "spoof"},
-                {Fetcher, "standard"},
-                {FetcherUTLS, "utls"},
-                {FetcherCurl, "curl"},
-        }
+	fetchers := []struct {
+		fn   FetcherFunc
+		name string
+	}{
+		{FetcherSpoof, "spoof"},
+		{Fetcher, "standard"},
+		{FetcherUTLS, "utls"},
+		{FetcherCurl, "curl"},
+	}
 
-        var lastErr error
-        var strategies []string
+	var lastErr error
+	var strategies []string
 
-        for _, fetcher := range fetchers {
-                strategies = append(strategies, fetcher.name)
-                var bytes []byte
-                var finalURL string
-                bytes, finalURL, lastErr = fetcher.fn(ctx, url)
-                if lastErr == nil {
-                        return bytes, finalURL, nil
-                }
-        }
+	for _, fetcher := range fetchers {
+		strategies = append(strategies, fetcher.name)
+		var bytes []byte
+		var finalURL string
+		bytes, finalURL, lastErr = fetcher.fn(ctx, url)
+		if lastErr == nil {
+			return bytes, finalURL, nil
+		}
+	}
 
-        // All strategies failed - log with all attempted strategies
-        if lastErr != nil {
-                LogFailure(url, 0, nil, lastErr.Error(), strategies)
-        }
+	// All strategies failed - log with all attempted strategies
+	if lastErr != nil {
+		LogFailure(url, 0, nil, lastErr.Error(), strategies)
+	}
 
-        return nil, "", lastErr
+	return nil, "", lastErr
 }
