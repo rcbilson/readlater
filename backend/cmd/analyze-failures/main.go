@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 )
 
 type analyzeConfig struct {

@@ -5,10 +5,8 @@ go 1.26.1
 require (
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/markusmobius/go-trafilatura v1.12.2
 	github.com/mattn/go-sqlite3 v1.14.37
-	github.com/refraction-networking/utls v1.8.2
-	golang.org/x/net v0.52.0
+	github.com/rcbilson/www v0.1.0
 	gotest.tools v2.2.0+incompatible
 )
 
@@ -30,9 +28,11 @@ require (
 	github.com/markusmobius/go-dateparser v1.2.4 // indirect
 	github.com/markusmobius/go-domdistiller v0.0.0-20240926050704-25b8d046ffb4 // indirect
 	github.com/markusmobius/go-htmldate v1.9.3 // indirect
+	github.com/markusmobius/go-trafilatura v1.12.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/tetratelabs/wazero v1.11.0 // indirect
@@ -40,6 +40,7 @@ require (
 	github.com/wasilibs/wazero-helpers v0.0.0-20250123031827-cd30c44769bb // indirect
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 )

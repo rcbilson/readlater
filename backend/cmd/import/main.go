@@ -16,7 +16,7 @@ import (
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/rcbilson/readlater/sqlite"
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 )
 
 type specification struct {

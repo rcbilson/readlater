@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 )
 
 func saveFile(t *testing.T, path string, bytes []byte) {

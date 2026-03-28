@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 )
 
 type specification struct {

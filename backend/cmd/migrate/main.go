@@ -10,7 +10,7 @@ import (
 	"time"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 	_ "github.com/mattn/go-sqlite3"
 )
 

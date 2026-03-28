@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/rcbilson/readlater/www"
+	"github.com/rcbilson/www"
 )
 
 type articleEntry struct {
