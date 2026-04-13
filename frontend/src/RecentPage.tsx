@@ -1,5 +1,5 @@
 // A react component that displays recent articles using local-first architecture
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { LuBookmark, LuDownload } from "react-icons/lu";
 
@@ -85,6 +85,7 @@ const RecentPage: React.FC = () => {
 
     if (wassyncing && isNowIdle) {
       console.log('RecentPage: Sync completed, refreshing articles');
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- setState is called async (after await), not synchronously
       refreshArticles().catch(console.error);
       }
   }, [syncState, refreshArticles]);
@@ -92,7 +93,9 @@ const RecentPage: React.FC = () => {
   // Periodic refresh to catch any missed sync updates
   // Uses a ref to access current articles without causing effect recreation
   const articlesRef = useRef(articles);
-  articlesRef.current = articles;
+  useLayoutEffect(() => {
+    articlesRef.current = articles;
+  }, [articles]);
 
   useEffect(() => {
     const interval = setInterval(async () => {

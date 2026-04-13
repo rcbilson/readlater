@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster"
 import { useDoAdd } from "./useDoAdd"
 import { isValidUrl } from "./sync"
@@ -6,33 +6,30 @@ import { isValidUrl } from "./sync"
 // This component acts as a PWA share target. It reads the shared URL from the POSTed form data.
 export default function ShareTarget() {
   const doAdd = useDoAdd();
-  const [error, setError] = useState<string | null>(null);
+
+  const params = new URLSearchParams(window.location.search);
+  const text = params.get("text");
+  const title = params.get("title");
+
+  // Validate the text is a valid URL before processing
+  const error = text && !isValidUrl(text)
+    ? `The shared text is not a valid URL: "${text}"`
+    : null;
 
   useEffect(() => {
-    // Only run on mount
-    if (window.location?.search) {
-      // GET with ?url=...
-      const params = new URLSearchParams(window.location.search);
-      const text = params.get("text");
-      const title = params.get("title");
+    if (!text) return;
 
-      if (!text) return;
+    console.log("ShareTarget: Received text:", text);
+    console.log("ShareTarget: Text length:", text.length);
 
-      console.log("ShareTarget: Received text:", text);
-      console.log("ShareTarget: Text length:", text.length);
-
-      // Validate the text is a valid URL before processing
-      if (!isValidUrl(text)) {
-        console.error("ShareTarget: Invalid URL received:", text);
-        setError(`The shared text is not a valid URL: "${text}"`);
-        return;
-      }
-
-      // The backend should canonicalize URLs automatically, so we can send the full URL
-      doAdd(text, title ?? undefined);
+    if (error) {
+      console.error("ShareTarget: Invalid URL received:", text);
       return;
     }
-  }, [doAdd]);
+
+    // The backend should canonicalize URLs automatically, so we can send the full URL
+    doAdd(text, title ?? undefined);
+  }, [doAdd, text, title, error]);
 
   if (error) {
     return (
